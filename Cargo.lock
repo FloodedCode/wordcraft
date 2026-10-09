@@ -4965,6 +4965,7 @@ dependencies = [
 name = "wordcraft-android"
 version = "0.3.0"
 dependencies = [
+ "android-activity",
  "android_logger",
  "eframe",
  "egui",
