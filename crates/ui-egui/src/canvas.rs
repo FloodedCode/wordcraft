@@ -351,10 +351,18 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
             }
             // IME candidate window placement & soft keyboard activation.
             let cr = Rect::from_min_max(pos2(x, y0), pos2(x + 1.0, y1));
-            if focused && app.canvas.ime_active {
+            // IME candidate window placement. Emit IMEOutput whenever the canvas is focused —
+            // the Kotlin bridge's sync_keyboard() will call requestShowKeyboard / requestHideKeyboard
+            // based on whether this output is present. We do NOT gate this on ime_active so that
+            // the system keyboard tracks canvas focus reliably on all devices.
+            if focused {
                 ui.ctx().output_mut(|o| {
-                    o.ime =
-                        Some(egui::output::IMEOutput { rect: cr, cursor_rect: cr, purpose: Default::default(), should_interrupt_composition: false });
+                    o.ime = Some(egui::output::IMEOutput {
+                        rect: cr,
+                        cursor_rect: cr,
+                        purpose: Default::default(),
+                        should_interrupt_composition: false,
+                    });
                 });
             }
             if !app.canvas.ime_preedit.is_empty() {
@@ -365,23 +373,40 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
         (resp, rects)
     });
     let (resp, rects) = out.inner;
-    // Focus: Tapping or clicking the canvas gives focus and activates the soft keyboard / IME.
-    if (resp.clicked() || resp.double_clicked() || app.canvas.want_focus) && !resp.dragged() {
+
+    // Focus + IME: any tap/click into the canvas grabs focus and marks IME as wanted.
+    // On touch the single tap is enough — we no longer require a double-tap.
+    let gained_focus = resp.clicked() || resp.double_clicked() || app.canvas.want_focus;
+    if gained_focus && !resp.dragged() {
         resp.request_focus();
         app.canvas.want_focus = false;
         app.canvas.ime_active = true;
+        app.canvas.caret_visible_since = crate::now_ms(); // flash caret immediately
     }
-    if resp.drag_started() || multi_touch.is_some() {
-        app.canvas.dragging = false;
-    }
+    // Do not suppress IME when a multitouch scroll happens — only a deliberate Escape
+    // or tapping outside closes the keyboard (handled in keys.rs).
+
     if resp.has_focus() {
         ui.memory_mut(|m| {
-            m.set_focus_lock_filter(resp.id, egui::EventFilter { tab: true, horizontal_arrows: true, vertical_arrows: true, escape: true })
+            m.set_focus_lock_filter(
+                resp.id,
+                egui::EventFilter { tab: true, horizontal_arrows: true, vertical_arrows: true, escape: true },
+            )
         });
     }
+
+    let had_focus = app.canvas.focused;
     app.canvas.focused = resp.has_focus();
+
+    // When focus is lost (e.g. user tapped into ribbon), clear ime_active so the
+    // keyboard is dismissed on the next raw_input_hook call.
+    if had_focus && !app.canvas.focused {
+        app.canvas.ime_active = false;
+    }
+
     mouse(app, ui, &resp, &rects, &layout, geo.scale, is_touch);
-    // Right-click: move the caret there (unless inside the selection), then the context menu.
+
+    // Right-click / long-press context menu: move caret, then show suggestions.
     if resp.secondary_clicked()
         && let Some(p) = resp.interact_pointer_pos()
         && let Some((page, x, y)) = page_at(&rects, geo.scale, p)
