@@ -165,6 +165,30 @@ fn key_to_char(key: Key, shift: bool) -> Option<char> {
     })
 }
 
+fn handle_preedit_and_commit(app: &mut WordApp, new_text: &str, is_commit: bool) {
+    let old_len = app.canvas.ime_preedit.chars().count();
+    if old_len > 0 {
+        for _ in 0..old_len {
+            let _ = app.run("text.deleteBackward", json!({}));
+        }
+    }
+    if is_commit {
+        app.canvas.ime_preedit.clear();
+        if new_text == "\n" || new_text == "\r" || new_text == "\r\n" {
+            let _ = app.run("text.insert", json!({"text": "\n"}));
+        } else if new_text == "\t" {
+            let _ = app.run("text.tab", json!({}));
+        } else if !new_text.is_empty() {
+            let _ = app.run("text.insert", json!({"text": new_text}));
+        }
+    } else {
+        app.canvas.ime_preedit = new_text.to_string();
+        if !new_text.is_empty() {
+            let _ = app.run("text.insert", json!({"text": new_text}));
+        }
+    }
+}
+
 /// Events for the focused canvas: text, editing keys, clipboard, IME.
 pub fn canvas_events(app: &mut WordApp, ctx: &egui::Context) {
     let events = ctx.input(|i| i.events.clone());
@@ -175,16 +199,13 @@ pub fn canvas_events(app: &mut WordApp, ctx: &egui::Context) {
                 if m.command || (m.ctrl && !cfg!(target_os = "macos")) {
                     continue;
                 }
-                if t.chars().all(|c| !c.is_control()) && !t.is_empty() {
-                    let _ = app.run("text.insert", json!({"text": t}));
-                }
+                handle_preedit_and_commit(app, &t, true);
             }
-            egui::Event::Ime(egui::ImeEvent::Preedit { text, .. }) => app.canvas.ime_preedit = text,
+            egui::Event::Ime(egui::ImeEvent::Preedit { text, .. }) => {
+                handle_preedit_and_commit(app, &text, false);
+            }
             egui::Event::Ime(egui::ImeEvent::Commit(text)) => {
-                app.canvas.ime_preedit.clear();
-                if !text.is_empty() {
-                    let _ = app.run("text.insert", json!({"text": text}));
-                }
+                handle_preedit_and_commit(app, &text, true);
             }
             egui::Event::Paste(t) => {
                 let id = if ctx.input(|i| i.modifiers.shift && i.modifiers.alt) { "edit.pasteText" } else { "edit.paste" };

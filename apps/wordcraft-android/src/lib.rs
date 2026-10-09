@@ -175,13 +175,13 @@ mod bridge {
         }
     }
 
-    /// Tell Android to show or hide the soft keyboard, updating state.
+    /// Tell Android to show or hide the soft keyboard, ONLY when state changes.
     pub fn sync_keyboard(_ctx: &Context, wants_ime: bool) {
         let was_shown = IME_SHOWN.swap(wants_ime, Ordering::Relaxed);
-        let method = if wants_ime { "requestShowKeyboard" } else { "requestHideKeyboard" };
-        if wants_ime == was_shown && !wants_ime {
-            return; // both false — keyboard is hidden, nothing to do
+        if wants_ime == was_shown {
+            return; // state did not change — do NOT spam JNI or restartInput every frame!
         }
+        let method = if wants_ime { "requestShowKeyboard" } else { "requestHideKeyboard" };
         with_activity(|env, _obj, class| {
             let _ = env.call_static_method(class, method, "()V", &[]);
             Ok(())

@@ -51,11 +51,11 @@ fn insert(s: &mut Session, v: &Value) -> CmdResult {
     let t = if raw { None } else { autoformat(s, text) };
     type_text(s, t.as_deref().unwrap_or(text))?;
     if !raw && text.chars().count() == 1 && text.chars().all(|c| c == ' ' || ",.;:!?".contains(c)) {
-        super::tools::autocorrect(s)?;
+        let _ = super::tools::autocorrect(s);
     }
     if !raw && text == " " {
-        list_autoformat(s)?;
-        dash_autoformat(s)?;
+        let _ = list_autoformat(s);
+        let _ = dash_autoformat(s);
     }
     sel_result(s)
 }
