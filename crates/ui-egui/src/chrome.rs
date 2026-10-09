@@ -217,6 +217,20 @@ pub fn status_bar(app: &mut WordApp, ui: &mut Ui) {
                         }
                     }
                     ui.add_space(8.0);
+                    let (r, resp) = ui.allocate_exact_size(vec2(22.0, 20.0), Sense::click());
+                    if app.canvas.ime_active {
+                        ui.painter().rect_filled(r, 3.0, t.checked);
+                    } else if resp.hovered() {
+                        ui.painter().rect_filled(r, 3.0, t.hover);
+                    }
+                    icons::paint(ui.painter(), r.shrink(2.0), "keyboard", t.icon, t.accent);
+                    if resp.on_hover_text(if app.canvas.ime_active { "Hide Keyboard" } else { "Show Keyboard" }).clicked() {
+                        app.canvas.ime_active = !app.canvas.ime_active;
+                        if app.canvas.ime_active {
+                            app.canvas.want_focus = true;
+                        }
+                    }
+                    ui.add_space(4.0);
                     let (r, resp) = ui.allocate_exact_size(vec2(56.0, 20.0), Sense::click());
                     if resp.hovered() {
                         ui.painter().rect_filled(r, 3.0, t.hover);

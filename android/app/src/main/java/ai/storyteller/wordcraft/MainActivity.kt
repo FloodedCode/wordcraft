@@ -36,7 +36,11 @@ class MainActivity : GameActivity() {
         val name = displayName(uri) ?: "document"
         val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
         if (bytes != null) {
-            nativeOnFileOpened(name, bytes)
+            try {
+                nativeOnFileOpened(name, bytes)
+            } catch (e: UnsatisfiedLinkError) {
+                Log.e(TAG, "nativeOnFileOpened failed", e)
+            }
         } else {
             Log.e(TAG, "failed to read $uri")
         }
@@ -65,7 +69,11 @@ class MainActivity : GameActivity() {
         intent?.data?.let { uri ->
             val name = displayName(uri) ?: "document"
             contentResolver.openInputStream(uri)?.use { stream ->
-                nativeOnFileOpened(name, stream.readBytes())
+                try {
+                    nativeOnFileOpened(name, stream.readBytes())
+                } catch (e: UnsatisfiedLinkError) {
+                    Log.e(TAG, "nativeOnFileOpened on VIEW intent failed", e)
+                }
             }
         }
     }
@@ -119,10 +127,6 @@ class MainActivity : GameActivity() {
 
         @Volatile
         private var instance: MainActivity? = null
-
-        init {
-            System.loadLibrary("wordcraft")
-        }
 
         @JvmStatic
         fun requestOpen(purpose: String) {

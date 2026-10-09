@@ -36,6 +36,7 @@ pub struct CanvasState {
     pub render_ms: f64,
     pub ime_preedit: String,
     pub want_focus: bool,
+    pub ime_active: bool,
     pub context_issue: Option<serde_json::Value>,
     pub context_synonyms: Option<serde_json::Value>,
 }
@@ -57,7 +58,8 @@ impl Default for CanvasState {
             focused: false,
             render_ms: 0.0,
             ime_preedit: String::new(),
-            want_focus: true,
+            want_focus: false,
+            ime_active: false,
             context_issue: None,
             context_synonyms: None,
         }
@@ -153,6 +155,28 @@ fn to_screen(origin: Pos2, page_rect: Rect, scale: f32, x: f32, y: f32) -> Pos2 
 
 pub fn show(app: &mut WordApp, ui: &mut Ui) {
     let t = Tokens::get(ui.ctx());
+    let multi_touch = ui.input(|i| i.multi_touch());
+    let zoom_delta = ui.input(|i| i.zoom_delta());
+    if let Some(touch) = multi_touch {
+        if (touch.zoom_delta - 1.0).abs() > 0.005 {
+            app.session.view.fit = String::new();
+            let new_zoom = (app.session.view.zoom * touch.zoom_delta).clamp(0.2, 5.0);
+            app.session.view.zoom = new_zoom;
+            app.canvas.ime_active = false;
+        }
+    } else if (zoom_delta - 1.0).abs() > 0.005 && ui.input(|i| i.modifiers.command || i.modifiers.ctrl) {
+        app.session.view.fit = String::new();
+        let new_zoom = (app.session.view.zoom * zoom_delta).clamp(0.2, 5.0);
+        app.session.view.zoom = new_zoom;
+        app.canvas.ime_active = false;
+    }
+
+    let is_touch = ui.input(|i| {
+        i.any_touches()
+            || i.raw.events.iter().any(|e| matches!(e, egui::Event::Touch { .. }))
+            || (cfg!(target_os = "android") && !i.raw.events.iter().any(|e| matches!(e, egui::Event::PointerButton { .. })))
+    });
+
     let layout = app.session.layout();
     let full = ui.available_rect_before_wrap();
     let show_ruler = app.session.view.ruler && app.session.view.mode == wordcraft_layout::ViewMode::Print && !app.session.view.read_mode;
@@ -188,6 +212,19 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
         if let Some(tr) = scroll_target {
             ui.scroll_to_rect(Rect::from_min_size(ui.min_rect().min + tr.min.to_vec2(), tr.size()), None);
         }
+
+        // Multi-touch 2-finger pan or 1-finger touch scroll.
+        if let Some(touch) = multi_touch {
+            if touch.translation_delta.length_sq() > 0.01 {
+                ui.scroll_with_delta(touch.translation_delta);
+            }
+        } else if is_touch && resp.dragged() {
+            let delta = resp.drag_delta();
+            if delta.length_sq() > 0.0 {
+                ui.scroll_with_delta(delta);
+            }
+        }
+
         let painter = ui.painter_at(ui.clip_rect());
         let ppp = ui.ctx().pixels_per_point();
         let max_tex = ui.ctx().input(|i| i.max_texture_side) as f32;
@@ -273,11 +310,26 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
         // Selection.
         if !app.session.sel.is_collapsed() {
             let (a, b) = app.session.sel.ordered();
-            for (pi, r) in layout.selection_rects(&app.session.doc, &a, &b, app.session.page_hint) {
-                if let Some(pr) = rects.get(pi) {
+            let sel_rects = layout.selection_rects(&app.session.doc, &a, &b, app.session.page_hint);
+            for (pi, r) in &sel_rects {
+                if let Some(pr) = rects.get(*pi) {
                     let sr =
                         Rect::from_min_size(pos2(pr.min.x + r.x * geo.scale, pr.min.y + r.y * geo.scale), vec2(r.w * geo.scale, r.h * geo.scale));
                     painter.rect_filled(sr, 0.0, t.selection);
+                }
+            }
+            if is_touch && !sel_rects.is_empty() {
+                if let (Some((p0, r0)), Some((p1, r1))) = (sel_rects.first(), sel_rects.last()) {
+                    if let Some(pr) = rects.get(*p0) {
+                        let top_pt = pos2(pr.min.x + r0.x * geo.scale, pr.min.y + r0.y * geo.scale);
+                        painter.circle_filled(top_pt, 4.5, t.accent);
+                        painter.line_segment([top_pt, pos2(top_pt.x, top_pt.y + r0.h * geo.scale)], Stroke::new(1.5, t.accent));
+                    }
+                    if let Some(pr) = rects.get(*p1) {
+                        let bot_pt = pos2(pr.min.x + (r1.x + r1.w) * geo.scale, pr.min.y + (r1.y + r1.h) * geo.scale);
+                        painter.circle_filled(bot_pt, 4.5, t.accent);
+                        painter.line_segment([pos2(bot_pt.x, bot_pt.y - r1.h * geo.scale), bot_pt], Stroke::new(1.5, t.accent));
+                    }
                 }
             }
         }
@@ -297,9 +349,9 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
             if focused {
                 ui.ctx().request_repaint_after(std::time::Duration::from_millis(530 - (since as u64 % 530)));
             }
-            // IME candidate window placement.
+            // IME candidate window placement & soft keyboard activation.
             let cr = Rect::from_min_max(pos2(x, y0), pos2(x + 1.0, y1));
-            if focused {
+            if focused && app.canvas.ime_active {
                 ui.ctx().output_mut(|o| {
                     o.ime =
                         Some(egui::output::IMEOutput { rect: cr, cursor_rect: cr, purpose: Default::default(), should_interrupt_composition: false });
@@ -313,10 +365,22 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
         (resp, rects)
     });
     let (resp, rects) = out.inner;
-    // Focus: the canvas takes keyboard focus on click and keeps Tab/arrows.
-    if resp.clicked() || resp.drag_started() || app.canvas.want_focus {
+    // Focus: On touch devices, double-tapping or tapping when already at caret opens the keyboard,
+    // single tap moves the caret without aggressively opening the soft keyboard.
+    if (resp.clicked() || resp.double_clicked() || app.canvas.want_focus) && !resp.dragged() {
         resp.request_focus();
         app.canvas.want_focus = false;
+        if is_touch {
+            if resp.double_clicked() {
+                app.canvas.ime_active = true;
+            }
+        } else if resp.clicked() || resp.double_clicked() {
+            app.canvas.ime_active = true;
+        }
+    }
+    if resp.drag_started() || multi_touch.is_some() {
+        app.canvas.ime_active = false;
+        app.canvas.dragging = false;
     }
     if resp.has_focus() {
         ui.memory_mut(|m| {
@@ -324,7 +388,7 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
         });
     }
     app.canvas.focused = resp.has_focus();
-    mouse(app, ui, &resp, &rects, &layout, geo.scale);
+    mouse(app, ui, &resp, &rects, &layout, geo.scale, is_touch);
     // Right-click: move the caret there (unless inside the selection), then the context menu.
     if resp.secondary_clicked()
         && let Some(p) = resp.interact_pointer_pos()
@@ -456,7 +520,7 @@ pub fn page_at(rects: &[Rect], scale: f32, p: Pos2) -> Option<(usize, f32, f32)>
     Some((i, (p.x - r.min.x) / scale, (p.y - r.min.y) / scale))
 }
 
-fn mouse(app: &mut WordApp, ui: &Ui, resp: &egui::Response, rects: &[Rect], layout: &DocLayout, scale: f32) {
+fn mouse(app: &mut WordApp, ui: &Ui, resp: &egui::Response, rects: &[Rect], layout: &DocLayout, scale: f32, is_touch: bool) {
     let Some(p) = resp.interact_pointer_pos().or_else(|| resp.hover_pos()) else { return };
     let Some((page, x, y)) = page_at(rects, scale, p) else { return };
     let mods = ui.input(|i| i.modifiers);
@@ -488,6 +552,38 @@ fn mouse(app: &mut WordApp, ui: &Ui, resp: &egui::Response, rects: &[Rect], layo
         let _ = app.run("select.paragraph", json!({}));
         return;
     }
+
+    if is_touch {
+        // Touch navigation: quick tap sets caret. Dragging is used for smooth scroll/pan.
+        if resp.clicked() {
+            let story = match layout.story_at(page, x, y) {
+                Some(StoryRef::Part(id))
+                    if app
+                        .session
+                        .doc
+                        .parts
+                        .get(&id)
+                        .is_some_and(|p| matches!(p.kind, wordcraft_doc::PartKind::Footnote | wordcraft_doc::PartKind::Endnote)) =>
+                {
+                    StoryRef::Part(id)
+                }
+                Some(StoryRef::Body) if matches!(story, StoryRef::Part(id) if app.session.doc.parts.get(&id).is_some_and(|p| matches!(p.kind, wordcraft_doc::PartKind::Footnote | wordcraft_doc::PartKind::Endnote))) => {
+                    StoryRef::Body
+                }
+                _ => story,
+            };
+            if let Some(pos) = layout.hit(page, x, y, story) {
+                let pj = serde_json::to_value(&pos).unwrap_or_default();
+                let _ = app.run("caret.set", json!({"pos": pj, "extend": false}));
+                app.session.page_hint = page;
+                if app.session.painter.is_some() {
+                    let _ = app.run("edit.pasteFormat", json!({}));
+                }
+            }
+        }
+        return;
+    }
+
     let pressed = ui.input(|i| i.pointer.primary_pressed()) && resp.contains_pointer();
     if pressed {
         // Clicking into a footnote/endnote edits it; clicking the body from a note goes back.
@@ -535,7 +631,6 @@ fn mouse(app: &mut WordApp, ui: &Ui, resp: &egui::Response, rects: &[Rect], layo
             app.session.page_hint = page;
             app.canvas.caret_visible_since = crate::now_ms();
         }
-        // Auto-scroll near the edges is handled by egui's scroll area drag.
     } else if app.canvas.dragging && ui.input(|i| i.pointer.primary_released()) {
         app.canvas.dragging = false;
         if app.session.painter.is_some() && !app.session.sel.is_collapsed() {

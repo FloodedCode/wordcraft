@@ -843,6 +843,18 @@ pub fn paint(p: &Painter, r: Rect, name: &str, c: Color32, accent: Color32) {
             pen.rect(3.0, 3.0, 17.0, 17.0, c);
             pen.fill(&[(8.0, 6.5), (8.0, 13.5), (14.0, 10.0)], a);
         }
+        "keyboard" => {
+            pen.rect(2.0, 5.0, 18.0, 15.0, c);
+            pen.frect(4.0, 7.0, 6.0, 8.5, c);
+            pen.frect(7.5, 7.0, 9.5, 8.5, c);
+            pen.frect(11.0, 7.0, 13.0, 8.5, c);
+            pen.frect(14.5, 7.0, 16.5, 8.5, c);
+            pen.frect(4.0, 10.0, 6.0, 11.5, c);
+            pen.frect(7.5, 10.0, 9.5, 11.5, c);
+            pen.frect(11.0, 10.0, 13.0, 11.5, c);
+            pen.frect(14.5, 10.0, 16.5, 11.5, c);
+            pen.frect(6.0, 13.0, 14.0, 14.0, a);
+        }
         "properties" | "info" => {
             pen.circle(10.0, 10.0, 7.0, c);
             pen.line_c(&[(10.0, 9.0), (10.0, 14.5)], a);

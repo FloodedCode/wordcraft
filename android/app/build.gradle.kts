@@ -37,17 +37,9 @@ android {
         jvmTarget = "17"
     }
 
-    // Do NOT enable prefab: android-activity (Rust) ships its own GameActivity glue.
-    // Linking game-activity_static via CMake/prefab would conflict.
     sourceSets {
         getByName("main") {
             jniLibs.srcDirs("src/main/jniLibs")
-        }
-    }
-
-    packaging {
-        jniLibs {
-            useLegacyPackaging = true
         }
     }
 }
