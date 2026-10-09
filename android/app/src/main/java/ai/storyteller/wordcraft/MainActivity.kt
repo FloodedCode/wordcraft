@@ -1,21 +1,26 @@
 package ai.storyteller.wordcraft
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import android.provider.OpenableColumns
+import android.text.InputType
 import android.util.Log
-import android.view.View
+import android.view.KeyEvent
 import android.view.WindowManager
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.google.androidgamesdk.GameActivity
+import com.google.androidgamesdk.gametextinput.State
+import java.io.File
 
 /**
  * GameActivity host for the Rust `libwordcraft.so` (eframe / egui desktop UI).
@@ -36,6 +41,7 @@ class MainActivity : GameActivity() {
 
     private var pendingSaveBytes: ByteArray? = null
     private var openPurpose: String = "document"
+    private var currentDocumentUri: Uri? = null
 
     // ────────────────────────── SAF launchers ──────────────────────────────────
 
@@ -43,10 +49,13 @@ class MainActivity : GameActivity() {
         ActivityResultContracts.OpenDocument(),
     ) { uri: Uri? ->
         uri ?: return@registerForActivityResult
-        // Persist read permission so the user doesn't have to pick the file again.
+        currentDocumentUri = uri
+        val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
         try {
-            contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        } catch (_: SecurityException) { /* not all providers support this */ }
+            contentResolver.takePersistableUriPermission(uri, flags)
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not persist URI permissions for $uri", e)
+        }
         relayFileToNative(uri)
     }
 
@@ -55,11 +64,48 @@ class MainActivity : GameActivity() {
     ) { uri: Uri? ->
         val bytes = pendingSaveBytes.also { pendingSaveBytes = null } ?: return@registerForActivityResult
         if (uri == null) return@registerForActivityResult
+        currentDocumentUri = uri
+        val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
         try {
-            contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
-                ?: Log.e(TAG, "no output stream for $uri")
+            contentResolver.takePersistableUriPermission(uri, flags)
         } catch (e: Exception) {
-            Log.e(TAG, "save failed", e)
+            Log.w(TAG, "Could not persist URI permissions for $uri", e)
+        }
+        writeBytesToUri(uri, bytes)
+        if (bytes.isNotEmpty()) {
+            saveInternalBackup(bytes)
+        }
+    }
+
+    private val requestPermissionsLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions(),
+    ) { permissions ->
+        permissions.forEach { (permission, isGranted) ->
+            if (!isGranted) {
+                Log.w(TAG, "Permission denied: $permission")
+            }
+        }
+    }
+
+    private fun checkAndRequestPermissions() {
+        val needed = mutableListOf<String>()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
+                needed.add(Manifest.permission.READ_MEDIA_IMAGES)
+            }
+            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                needed.add(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        } else {
+            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                needed.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
+            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                needed.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            }
+        }
+        if (needed.isNotEmpty()) {
+            requestPermissionsLauncher.launch(needed.toTypedArray())
         }
     }
 
@@ -68,7 +114,13 @@ class MainActivity : GameActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         instance = this
         super.onCreate(savedInstanceState)
+        setImeEditorInfoFields(
+            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE,
+            EditorInfo.IME_ACTION_NONE,
+            EditorInfo.IME_FLAG_NO_ENTER_ACTION,
+        )
         applyImmersiveFullscreen()
+        checkAndRequestPermissions()
         handleIncomingIntent(intent)
     }
 
@@ -89,9 +141,62 @@ class MainActivity : GameActivity() {
         if (hasFocus) applyImmersiveFullscreen()
     }
 
+    override fun onPause() {
+        super.onPause()
+        triggerNativeAutoSave()
+    }
+
+    override fun onSoftwareKeyboardVisibilityChanged(visible: Boolean) {
+        super.onSoftwareKeyboardVisibilityChanged(visible)
+        try {
+            nativeOnKeyboardVisibilityChanged(visible)
+        } catch (_: UnsatisfiedLinkError) {}
+    }
+
     override fun onDestroy() {
         if (instance === this) instance = null
         super.onDestroy()
+    }
+
+    // ─────────────────────── key handling ──────────────────────────────────────
+
+    override fun onEditorAction(action: Int) {
+        super.onEditorAction(action)
+        val now = SystemClock.uptimeMillis()
+        val down = KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER, 0)
+        val up = KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER, 0)
+        onKeyDown(KeyEvent.KEYCODE_ENTER, down)
+        onKeyUp(KeyEvent.KEYCODE_ENTER, up)
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+            return super.onKeyDown(keyCode, event)
+        }
+        val handled = super.onKeyDown(keyCode, event)
+        if (!handled) {
+            mSurfaceView?.dispatchKeyEvent(event)
+        }
+        return handled
+    }
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+            return super.onKeyUp(keyCode, event)
+        }
+        val handled = super.onKeyUp(keyCode, event)
+        if (!handled) {
+            mSurfaceView?.dispatchKeyEvent(event)
+        }
+        return handled
+    }
+
+    private fun triggerNativeAutoSave() {
+        try {
+            nativeTriggerAutoSave()
+        } catch (e: UnsatisfiedLinkError) {
+            Log.d(TAG, "nativeTriggerAutoSave not linked", e)
+        }
     }
 
     // ─────────────────────── fullscreen / insets ───────────────────────────────
@@ -176,19 +281,78 @@ class MainActivity : GameActivity() {
 
     /**
      * Called from Rust/JNI to show the soft keyboard.
-     * Uses GameActivity's native showIme() so GameTextInput's InputConnection receives
-     * commitText, setComposingText and character inputs.
+     * Uses GameActivity's [mSurfaceView] so GameTextInput's InputConnection
+     * remains active and receives commitText, setComposingText and character inputs.
      */
     fun showKeyboard() {
-        showIme(0)
+        val view = mSurfaceView ?: window.decorView
+        view.isFocusable = true
+        view.isFocusableInTouchMode = true
+        if (!view.isFocused) {
+            view.requestFocus()
+        }
+        setImeEditorInfoFields(
+            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE,
+            EditorInfo.IME_ACTION_NONE,
+            EditorInfo.IME_FLAG_NO_ENTER_ACTION,
+        )
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as? InputMethodManager
+        imm?.restartInput(view)
+        imm?.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
+        WindowCompat.getInsetsController(window, view).show(WindowInsetsCompat.Type.ime())
     }
 
     /** Called from Rust/JNI to dismiss the soft keyboard. */
     fun hideKeyboard() {
-        hideIme(0)
+        val view = mSurfaceView ?: window.decorView
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as? InputMethodManager
+        imm?.hideSoftInputFromWindow(view.windowToken, 0)
+        WindowCompat.getInsetsController(window, view).hide(WindowInsetsCompat.Type.ime())
     }
 
-    // ─────────────────────── open / save launchers ──────────────────────────────
+    // ─────────────────────── open / save / autosave ─────────────────────────────
+
+    private fun writeBytesToUri(uri: Uri, bytes: ByteArray): Boolean {
+        return try {
+            contentResolver.openOutputStream(uri)?.use { stream ->
+                stream.write(bytes)
+                stream.flush()
+            } ?: return false
+            Log.i(TAG, "Saved ${bytes.size} bytes to $uri")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to write bytes to $uri", e)
+            false
+        }
+    }
+
+    private fun saveInternalBackup(bytes: ByteArray) {
+        if (bytes.isEmpty()) return
+        try {
+            File(filesDir, "autosave_backup.docx").writeBytes(bytes)
+            Log.d(TAG, "Internal autosave backup updated (${bytes.size} bytes)")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to write internal autosave backup", e)
+        }
+    }
+
+    private fun saveOrOverwrite(name: String, bytes: ByteArray) {
+        val uri = currentDocumentUri
+        if (uri != null && writeBytesToUri(uri, bytes)) {
+            saveInternalBackup(bytes)
+            return
+        }
+        launchSave(name, bytes)
+    }
+
+    private fun performAutoSave(bytes: ByteArray) {
+        if (bytes.isEmpty()) return
+        saveInternalBackup(bytes)
+        val uri = currentDocumentUri
+        if (uri != null) {
+            writeBytesToUri(uri, bytes)
+        }
+    }
 
     private fun launchOpen(purpose: String) {
         openPurpose = purpose
@@ -207,12 +371,20 @@ class MainActivity : GameActivity() {
                 "*/*",
             )
         }
-        openDocument.launch(mimes)
+        try {
+            openDocument.launch(mimes)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to launch OpenDocument picker", e)
+        }
     }
 
     private fun launchSave(name: String, bytes: ByteArray) {
         pendingSaveBytes = bytes
-        createDocument.launch(name)
+        try {
+            createDocument.launch(name)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to launch CreateDocument picker", e)
+        }
     }
 
     // ─────────────────────── companion / JNI bridge ─────────────────────────────
@@ -234,7 +406,13 @@ class MainActivity : GameActivity() {
         @JvmStatic
         fun requestSave(name: String, bytes: ByteArray) {
             val act = instance ?: run { Log.w(TAG, "requestSave: activity not ready"); return }
-            act.runOnUiThread { act.launchSave(name, bytes) }
+            act.runOnUiThread { act.saveOrOverwrite(name, bytes) }
+        }
+
+        @JvmStatic
+        fun requestAutoSave(bytes: ByteArray) {
+            val act = instance ?: return
+            act.runOnUiThread { act.performAutoSave(bytes) }
         }
 
         /** Show the IME / soft keyboard — called from Rust when egui IME output is set. */
@@ -260,5 +438,13 @@ class MainActivity : GameActivity() {
         /** Deliver plain text shared from another app. */
         @JvmStatic
         private external fun nativePushText(text: String)
+
+        /** Trigger Rust engine to save document bytes for autosave on app pause. */
+        @JvmStatic
+        private external fun nativeTriggerAutoSave()
+
+        /** Notify Rust engine when soft keyboard visibility changes. */
+        @JvmStatic
+        private external fun nativeOnKeyboardVisibilityChanged(visible: Boolean)
     }
 }

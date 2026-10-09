@@ -51,6 +51,14 @@ impl eframe::App for AndroidWordApp {
         if let Ok(mut slot) = egui_ctx_slot().lock() {
             *slot = Some(ctx.clone());
         }
+        // Optimize button touch targets and spacing for Android touchscreens.
+        ctx.global_style_mut(|s| {
+            if s.spacing.interact_size.y < 30.0 {
+                s.spacing.interact_size = egui::vec2(36.0, 32.0);
+                s.spacing.button_padding = egui::vec2(10.0, 6.0);
+                s.spacing.item_spacing = egui::vec2(8.0, 6.0);
+            }
+        });
         self.0.logic(ctx);
         if self.0.quit_requested {
             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
@@ -167,15 +175,15 @@ mod bridge {
         }
     }
 
-    /// Tell Android to show or hide the soft keyboard, but only when state changes.
+    /// Tell Android to show or hide the soft keyboard, updating state.
     pub fn sync_keyboard(_ctx: &Context, wants_ime: bool) {
         let was_shown = IME_SHOWN.swap(wants_ime, Ordering::Relaxed);
-        if wants_ime == was_shown {
-            return; // no change — skip the JNI round-trip
-        }
         let method = if wants_ime { "requestShowKeyboard" } else { "requestHideKeyboard" };
+        if wants_ime == was_shown && !wants_ime {
+            return; // both false — keyboard is hidden, nothing to do
+        }
         with_activity(|env, _obj, class| {
-            env.call_static_method(class, method, "()V", &[])?;
+            let _ = env.call_static_method(class, method, "()V", &[]);
             Ok(())
         });
     }
@@ -240,6 +248,36 @@ mod bridge {
             return;
         };
         super::push_shared_text(jtext.into());
+    }
+
+    /// `MainActivity.nativeOnKeyboardVisibilityChanged(boolean visible)`
+    #[unsafe(no_mangle)]
+    pub extern "system" fn Java_ai_storyteller_wordcraft_MainActivity_nativeOnKeyboardVisibilityChanged<'local>(
+        _env: JNIEnv<'local>,
+        _class: JClass<'local>,
+        visible: jni::sys::jboolean,
+    ) {
+        IME_SHOWN.store(visible != 0, Ordering::Relaxed);
+    }
+
+    /// `MainActivity.nativeTriggerAutoSave()`
+    #[unsafe(no_mangle)]
+    pub extern "system" fn Java_ai_storyteller_wordcraft_MainActivity_nativeTriggerAutoSave<'local>(
+        _env: JNIEnv<'local>,
+        _class: JClass<'local>,
+    ) {
+        with_activity(|env, _obj, class| {
+            let empty: [u8; 0] = [];
+            let jbytes = env.byte_array_from_slice(&empty)?;
+            let jbytes_obj = jni::objects::JObject::from(jbytes);
+            let _ = env.call_static_method(
+                class,
+                "requestAutoSave",
+                "([B)V",
+                &[JValue::Object(&jbytes_obj)],
+            );
+            Ok(())
+        });
     }
 }
 
