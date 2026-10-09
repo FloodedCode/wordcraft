@@ -1,0 +1,47 @@
+[package]
+name = "wordcraft-android"
+description = "WordCraft for Android (Native Rust eframe + GameActivity)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+name = "wordcraft"
+
+[lints.rust]
+unsafe_code = "allow"
+
+[dependencies]
+wordcraft-doc = { workspace = true }
+wordcraft-engine = { workspace = true }
+wordcraft-ui-egui = { workspace = true }
+egui = { workspace = true }
+serde_json = { workspace = true }
+log = { workspace = true }
+
+[target.'cfg(target_os = "android")'.dependencies]
+eframe = { workspace = true, features = ["default_fonts", "wgpu", "android-game-activity"] }
+winit = { version = "0.30", default-features = false, features = ["android-game-activity"] }
+android_logger = "0.14"
+jni = "0.21"
+ndk-context = "0.1"
+
+[target.'cfg(not(target_os = "android"))'.dependencies]
+eframe = { workspace = true, features = ["default_fonts", "wgpu"] }
+
+[package.metadata.android]
+package = "ai.storyteller.wordcraft"
+apk_name = "WordCraft"
+label = "WordCraft"
+min_sdk_version = 26
+target_sdk_version = 34
+icon = "../../assets/app-icon/hicolor/256x256/apps/ai.storyteller.wordcraft.png"
+orientation = "sensor"
+build_targets = ["aarch64-linux-android", "x86_64-linux-android"]
+
+[package.metadata.android.application]
+allow_backup = true
+is_game = false
+has_code = true

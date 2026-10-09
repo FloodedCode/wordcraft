@@ -8,3 +8,10 @@ plan/
 /.claude/
 /target-*/
 /craft-fonts/
+
+# Android native libs (built by cargo-ndk / android/build-native.*)
+/android/app/src/main/jniLibs/**/*.so
+/android/.gradle/
+/android/**/build/
+/android/local.properties
+/android-studio/

@@ -1,0 +1,9 @@
+<resources>
+    <!-- Fullscreen host for the egui desktop shell; no Microsoft styling. -->
+    <style name="Theme.WordCraft" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowFullscreen">false</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        <item name="android:statusBarColor">#FF3B5BDB</item>
+        <item name="android:navigationBarColor">#FF3B5BDB</item>
+    </style>
+</resources>
