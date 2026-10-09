@@ -182,6 +182,13 @@ fn android_main(app: winit::platform::android::activity::AndroidApp) {
         .with_app_id("ai.storyteller.wordcraft")
         .with_fullscreen(true);
 
+    if let eframe::egui_wgpu::WgpuSetup::CreateNew(create) = &mut options.wgpu_options.wgpu_setup {
+        // On Android / Android Emulator, Vulkan drivers (e.g. Goldfish GFXStream/Mesa) often
+        // crash inside driver indirect validation or create_bind_group_layout.
+        // Backends::GL (OpenGL ES) is universally supported and rock-solid.
+        create.instance_descriptor.backends = eframe::wgpu::Backends::from_env().unwrap_or(eframe::wgpu::Backends::GL);
+    }
+
     let _ = eframe::run_native(
         "WordCraft",
         options,

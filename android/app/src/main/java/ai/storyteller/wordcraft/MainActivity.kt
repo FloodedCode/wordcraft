@@ -65,6 +65,11 @@ class MainActivity : GameActivity() {
         instance = this
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+        val controller = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
+        controller.systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        controller.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+
         // Open a document if launched via VIEW intent.
         intent?.data?.let { uri ->
             val name = displayName(uri) ?: "document"

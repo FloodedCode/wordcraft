@@ -365,21 +365,13 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
         (resp, rects)
     });
     let (resp, rects) = out.inner;
-    // Focus: On touch devices, double-tapping or tapping when already at caret opens the keyboard,
-    // single tap moves the caret without aggressively opening the soft keyboard.
+    // Focus: Tapping or clicking the canvas gives focus and activates the soft keyboard / IME.
     if (resp.clicked() || resp.double_clicked() || app.canvas.want_focus) && !resp.dragged() {
         resp.request_focus();
         app.canvas.want_focus = false;
-        if is_touch {
-            if resp.double_clicked() {
-                app.canvas.ime_active = true;
-            }
-        } else if resp.clicked() || resp.double_clicked() {
-            app.canvas.ime_active = true;
-        }
+        app.canvas.ime_active = true;
     }
     if resp.drag_started() || multi_touch.is_some() {
-        app.canvas.ime_active = false;
         app.canvas.dragging = false;
     }
     if resp.has_focus() {
