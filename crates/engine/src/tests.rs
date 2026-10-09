@@ -301,6 +301,25 @@ fn failed_command_leaves_document_unchanged() {
 }
 
 #[test]
+fn typing_with_stale_caret_clamps_instead_of_failing() {
+    // A caret left past the end (or mid-character) by undo/redo or a scripted selection must
+    // not eat typed text: deletion tolerates it via clamped grapheme boundaries, and typing
+    // now clamps too instead of failing with `BadOffset`.
+    let mut s = s();
+    run(&mut s, "text.insert", json!({"text": "Hallo"}));
+    let stale = Pos::body(0, 999);
+    s.sel = crate::Selection::caret(stale);
+    run(&mut s, "text.insert", json!({"text": "!"}));
+    assert_eq!(text(&s), "Hallo!");
+
+    let mut u = Session::new(wordcraft_doc::Document::new());
+    run(&mut u, "text.insert", json!({"text": "ä"}));
+    u.sel = crate::Selection::caret(Pos::body(0, 1)); // middle of the two-byte `ä`
+    run(&mut u, "text.insert", json!({"text": "x"}));
+    assert_eq!(text(&u), "xä");
+}
+
+#[test]
 fn hostile_params_never_panic() {
     let reg = cmd::registry();
     let junk = [

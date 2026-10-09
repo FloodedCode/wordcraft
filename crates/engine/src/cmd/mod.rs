@@ -119,6 +119,10 @@ fn track_delete(s: &mut Session, a: &Pos, b: &Pos) -> Result<Pos, CmdError> {
 
 /// Insert typed text at the caret (replacing the selection), with pending formatting and track changes.
 pub fn type_text(s: &mut Session, text: &str) -> Result<(), CmdError> {
+    // A stale caret (byte offset past the end, or off a char boundary after undo/redo or a
+    // scripted selection) must not eat typed text: deletion tolerates it (the grapheme
+    // boundaries clamp internally), so typing clamps too instead of failing with `BadOffset`.
+    s.clamp_selection();
     let mut props = s.typing_props();
     delete_selection(s)?;
     if s.doc.settings.track_changes {

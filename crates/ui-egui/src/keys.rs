@@ -32,7 +32,10 @@ pub fn key_name(k: Key) -> Option<&'static str> {
         Key::Num1 => "1",
         Key::Num2 => "2",
         Key::Num3 => "3",
+        Key::Num4 => "4",
         Key::Num5 => "5",
+        Key::Num6 => "6",
+        Key::Num7 => "7",
         Key::Num8 => "8",
         Key::Num9 => "9",
         Key::F3 => "F3",
@@ -56,6 +59,7 @@ pub fn key_name(k: Key) -> Option<&'static str> {
         Key::N => "N",
         Key::O => "O",
         Key::P => "P",
+        Key::Q => "Q",
         Key::R => "R",
         Key::S => "S",
         Key::T => "T",
@@ -169,22 +173,36 @@ fn handle_preedit_and_commit(app: &mut WordApp, new_text: &str, is_commit: bool)
     let old_len = app.canvas.ime_preedit.chars().count();
     if old_len > 0 {
         for _ in 0..old_len {
-            let _ = app.run("text.deleteBackward", json!({}));
+            let _ = app.run("text.backspace", json!({}));
         }
     }
     if is_commit {
         app.canvas.ime_preedit.clear();
-        if new_text == "\n" || new_text == "\r" || new_text == "\r\n" {
-            let _ = app.run("text.insert", json!({"text": "\n"}));
-        } else if new_text == "\t" {
-            let _ = app.run("text.tab", json!({}));
-        } else if !new_text.is_empty() {
-            let _ = app.run("text.insert", json!({"text": new_text}));
+        if !new_text.is_empty() {
+            insert_typed_lines(app, new_text);
         }
     } else {
         app.canvas.ime_preedit = new_text.to_string();
         if !new_text.is_empty() {
             let _ = app.run("text.insert", json!({"text": new_text}));
+        }
+    }
+}
+
+/// Insert committed text the way the user typed it: line breaks split paragraphs (like
+/// Enter) instead of landing as literal control characters inside a paragraph.
+fn insert_typed_lines(app: &mut WordApp, text: &str) {
+    let normalized = text.replace("\r\n", "\n").replace('\r', "\n");
+    let mut first = true;
+    for chunk in normalized.split('\n') {
+        if !first {
+            let _ = app.run("text.newParagraph", json!({}));
+        }
+        first = false;
+        if chunk == "\t" {
+            let _ = app.run("text.tab", json!({}));
+        } else if !chunk.is_empty() {
+            let _ = app.run("text.insert", json!({"text": chunk}));
         }
     }
 }

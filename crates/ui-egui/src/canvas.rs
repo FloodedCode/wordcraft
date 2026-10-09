@@ -318,18 +318,17 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                     painter.rect_filled(sr, 0.0, t.selection);
                 }
             }
-            if is_touch && !sel_rects.is_empty() {
-                if let (Some((p0, r0)), Some((p1, r1))) = (sel_rects.first(), sel_rects.last()) {
-                    if let Some(pr) = rects.get(*p0) {
-                        let top_pt = pos2(pr.min.x + r0.x * geo.scale, pr.min.y + r0.y * geo.scale);
-                        painter.circle_filled(top_pt, 4.5, t.accent);
-                        painter.line_segment([top_pt, pos2(top_pt.x, top_pt.y + r0.h * geo.scale)], Stroke::new(1.5, t.accent));
-                    }
-                    if let Some(pr) = rects.get(*p1) {
-                        let bot_pt = pos2(pr.min.x + (r1.x + r1.w) * geo.scale, pr.min.y + (r1.y + r1.h) * geo.scale);
-                        painter.circle_filled(bot_pt, 4.5, t.accent);
-                        painter.line_segment([pos2(bot_pt.x, bot_pt.y - r1.h * geo.scale), bot_pt], Stroke::new(1.5, t.accent));
-                    }
+            if is_touch && !sel_rects.is_empty()
+                && let (Some((p0, r0)), Some((p1, r1))) = (sel_rects.first(), sel_rects.last()) {
+                if let Some(pr) = rects.get(*p0) {
+                    let top_pt = pos2(pr.min.x + r0.x * geo.scale, pr.min.y + r0.y * geo.scale);
+                    painter.circle_filled(top_pt, 4.5, t.accent);
+                    painter.line_segment([top_pt, pos2(top_pt.x, top_pt.y + r0.h * geo.scale)], Stroke::new(1.5, t.accent));
+                }
+                if let Some(pr) = rects.get(*p1) {
+                    let bot_pt = pos2(pr.min.x + (r1.x + r1.w) * geo.scale, pr.min.y + (r1.y + r1.h) * geo.scale);
+                    painter.circle_filled(bot_pt, 4.5, t.accent);
+                    painter.line_segment([pos2(bot_pt.x, bot_pt.y - r1.h * geo.scale), bot_pt], Stroke::new(1.5, t.accent));
                 }
             }
         }

@@ -539,6 +539,65 @@ mod tests {
         WordApp::new(Session::new(wordcraft_doc::Document::new()), Services::default())
     }
 
+    /// Drive full frames (logic + UI) headlessly with the given input events.
+    fn frame(ctx: &egui::Context, app: &mut WordApp, events: Vec<egui::Event>) {
+        let input = egui::RawInput { events, ..Default::default() };
+        // No painter here: dropping the font atlas delta unapplied trips an epaint debug assertion.
+        ctx.run_ui(input, |ui| {
+            app.logic(ui.ctx());
+            app.ui(ui);
+        })
+        .drop_without_applying_deltas();
+    }
+
+    fn focused_app() -> (egui::Context, WordApp) {
+        let ctx = egui::Context::default();
+        let mut app = app();
+        app.canvas.want_focus = true;
+        // Settle fonts (two frames) and let the canvas take focus.
+        frame(&ctx, &mut app, Vec::new());
+        frame(&ctx, &mut app, Vec::new());
+        frame(&ctx, &mut app, Vec::new());
+        assert!(app.canvas.focused, "canvas should take focus via want_focus");
+        (ctx, app)
+    }
+
+    fn body_text(app: &WordApp) -> String {
+        app.session.doc.plain_text(wordcraft_doc::StoryRef::Body)
+    }
+
+    /// Typing through `Event::Text` (soft keyboards, control channel `ui.text`) inserts.
+    #[test]
+    fn typing_text_event_inserts_into_document() {
+        let (ctx, mut app) = focused_app();
+        frame(&ctx, &mut app, vec![egui::Event::Text("Hallo".into())]);
+        frame(&ctx, &mut app, Vec::new());
+        assert!(body_text(&app).contains("Hallo"), "typed text missing: {0:?}", body_text(&app));
+    }
+
+    /// An IME commit of a newline (soft-keyboard Enter) splits the paragraph like Enter.
+    #[test]
+    fn ime_commit_newline_splits_paragraph() {
+        let (ctx, mut app) = focused_app();
+        frame(&ctx, &mut app, vec![egui::Event::Text("Hallo".into())]);
+        frame(&ctx, &mut app, vec![egui::Event::Ime(egui::ImeEvent::Commit("\n".into()))]);
+        frame(&ctx, &mut app, vec![egui::Event::Text("Welt".into())]);
+        frame(&ctx, &mut app, Vec::new());
+        assert_eq!(body_text(&app), "Hallo\nWelt");
+        assert_eq!(app.session.doc.body.len(), 2);
+    }
+
+    /// IME composition replaces the preedit instead of duplicating it, then commits once.
+    #[test]
+    fn ime_preedit_replaces_instead_of_duplicating() {
+        let (ctx, mut app) = focused_app();
+        frame(&ctx, &mut app, vec![egui::Event::Ime(egui::ImeEvent::Preedit { text: "h".into(), active_range_chars: None })]);
+        frame(&ctx, &mut app, vec![egui::Event::Ime(egui::ImeEvent::Preedit { text: "ha".into(), active_range_chars: None })]);
+        frame(&ctx, &mut app, vec![egui::Event::Ime(egui::ImeEvent::Commit("ha".into()))]);
+        frame(&ctx, &mut app, Vec::new());
+        assert_eq!(body_text(&app), "ha");
+    }
+
     #[test]
     fn user_name_survives_restart() {
         let mut first = app();
