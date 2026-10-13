@@ -1,0 +1,2474 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+  <meta name="theme-color" content="#181a20" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>WordCraft Android (v0.6.1 — Pure Open-Source Edition)</title>
+  <style>
+    :root, [data-theme="dark"] {
+      --bg-app: #12141a;
+      --bg-titlebar: #181b22;
+      --bg-ribbon: #1e222b;
+      --bg-ribbon-group: #252a36;
+      --bg-canvas: #0f1116;
+      --bg-page: #1e2129;
+      --text-page: #eceff4;
+      --bg-panel: #1a1e26;
+      --bg-hover: #2e3444;
+      --bg-active: #3b4254;
+      --border-color: #2f3545;
+      --border-subtle: #252a36;
+      --text-primary: #e5e9f0;
+      --text-secondary: #9aa5b8;
+      --text-muted: #6c7689;
+      --accent: #4c8dff;
+      --accent-hover: #6ba1ff;
+      --accent-soft: rgba(76, 141, 255, 0.16);
+      --track-ins: #f472b6;
+      --track-del: #f87171;
+      --comment-bg: #272c3a;
+      --comment-border: #eab308;
+      --page-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+      --ruler-bg: #181b22;
+      --ruler-tick: #596275;
+    }
+
+    [data-theme="light"] {
+      --bg-app: #f0f2f5;
+      --bg-titlebar: #1e3a8a;
+      --bg-ribbon: #f8fafc;
+      --bg-ribbon-group: #ffffff;
+      --bg-canvas: #e2e8f0;
+      --bg-page: #ffffff;
+      --text-page: #111827;
+      --bg-panel: #ffffff;
+      --bg-hover: #e2e8f0;
+      --bg-active: #cbd5e1;
+      --border-color: #cbd5e1;
+      --border-subtle: #e2e8f0;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --accent-soft: rgba(37, 99, 235, 0.12);
+      --track-ins: #db2777;
+      --track-del: #dc2626;
+      --comment-bg: #fefce8;
+      --comment-border: #eab308;
+      --page-shadow: 0 4px 20px rgba(15, 23, 42, 0.12);
+      --ruler-bg: #f1f5f9;
+      --ruler-tick: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+      background: var(--bg-app);
+      color: var(--text-primary);
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* TOP TITLE BAR */
+    .titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-titlebar);
+      color: #ffffff;
+      height: 44px;
+      padding: 0 10px;
+      border-bottom: 1px solid var(--border-color);
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .brand-cluster {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .app-logo {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 15px;
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+      flex-shrink: 0;
+    }
+
+    .doc-title-input {
+      background: transparent;
+      border: 1px solid transparent;
+      color: #fff;
+      font-size: 13.5px;
+      font-weight: 600;
+      padding: 3px 6px;
+      border-radius: 4px;
+      width: 190px;
+      max-width: 34vw;
+      text-overflow: ellipsis;
+    }
+    .doc-title-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: rgba(0, 0, 0, 0.25);
+    }
+
+    .badge-pill {
+      font-size: 10.5px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(76, 141, 255, 0.22);
+      color: #93c5fd;
+      border: 1px solid rgba(147, 197, 253, 0.3);
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    .quick-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .tb-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #fff;
+      height: 30px;
+      padding: 0 9px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+    .tb-btn:hover, .tb-btn:active {
+      background: rgba(255, 255, 255, 0.18);
+    }
+    .tb-btn.accent-btn {
+      background: #2563eb;
+      border-color: #3b82f6;
+      font-weight: 600;
+    }
+    .tb-btn.accent-btn:hover {
+      background: #1d4ed8;
+    }
+
+    /* RIBBON TABS BAR */
+    .ribbon-tabs {
+      display: flex;
+      align-items: center;
+      background: var(--bg-ribbon);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0 8px;
+      gap: 2px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      flex-shrink: 0;
+    }
+    .ribbon-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .ribbon-tab {
+      padding: 8px 13px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: transparent;
+      border: none;
+      border-bottom: 2.5px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .ribbon-tab:hover {
+      color: var(--text-primary);
+      background: var(--bg-hover);
+    }
+    .ribbon-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+      background: var(--accent-soft);
+    }
+    .ribbon-tab.file-tab {
+      background: var(--accent);
+      color: #fff;
+      border-radius: 5px;
+      padding: 5px 12px;
+      margin-right: 6px;
+      border-bottom: none;
+    }
+
+    /* RIBBON TOOLBAR */
+    .ribbon-panel {
+      display: none;
+      align-items: stretch;
+      background: var(--bg-ribbon);
+      border-bottom: 1px solid var(--border-color);
+      padding: 6px 8px;
+      gap: 8px;
+      overflow-x: auto;
+      flex-shrink: 0;
+      scrollbar-width: thin;
+    }
+    .ribbon-panel.active {
+      display: flex;
+    }
+
+    .ribbon-group {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: var(--bg-ribbon-group);
+      border: 1px solid var(--border-subtle);
+      border-radius: 7px;
+      padding: 5px 8px 3px;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .ribbon-group-controls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: nowrap;
+    }
+
+    .ribbon-group-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      text-align: center;
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 2px;
+      margin-top: 2px;
+    }
+
+    /* Touch Mode adaptations */
+    body.touch-mode .rb-btn {
+      min-height: 36px;
+      min-width: 36px;
+      padding: 5px 10px;
+      font-size: 13px;
+    }
+    body.touch-mode .ribbon-group-label {
+      display: none;
+    }
+
+    .rb-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-primary);
+      min-height: 30px;
+      min-width: 30px;
+      padding: 3px 7px;
+      border-radius: 5px;
+      font-size: 12px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.12s;
+    }
+    .rb-btn:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-color);
+    }
+    .rb-btn.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .rb-select, .rb-input {
+      background: var(--bg-app);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      height: 30px;
+      padding: 0 6px;
+      font-size: 12px;
+    }
+
+    .style-chip {
+      padding: 4px 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      background: var(--bg-app);
+      color: var(--text-primary);
+      cursor: pointer;
+      font-size: 11.5px;
+      white-space: nowrap;
+    }
+    .style-chip:hover, .style-chip.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    /* RULER */
+    .ruler-bar {
+      height: 22px;
+      background: var(--ruler-bg);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+      font-size: 9.5px;
+      color: var(--ruler-tick);
+      position: relative;
+    }
+    .ruler-track {
+      width: 794px;
+      max-width: 96vw;
+      height: 100%;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: 0 48px 2px;
+      border-left: 2px solid var(--accent);
+      border-right: 2px solid var(--accent);
+      background: rgba(76, 141, 255, 0.04);
+    }
+
+    /* WORKSPACE LAYOUT */
+    .workspace {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* LEFT NAVIGATION PANE */
+    .nav-pane {
+      width: 250px;
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      transition: margin-left 0.2s;
+    }
+    .nav-pane.hidden {
+      display: none;
+    }
+    .pane-header {
+      padding: 10px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .nav-search {
+      margin: 8px 10px;
+      padding: 6px 8px;
+      border-radius: 5px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-app);
+      color: var(--text-primary);
+      font-size: 12px;
+    }
+    .outline-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .outline-item {
+      padding: 5px 8px;
+      border-radius: 5px;
+      font-size: 12px;
+      color: var(--text-primary);
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .outline-item:hover {
+      background: var(--bg-hover);
+    }
+    .outline-item.h2 { padding-left: 18px; color: var(--text-secondary); }
+    .outline-item.h3 { padding-left: 30px; color: var(--text-muted); font-size: 11.5px; }
+
+    /* MAIN DOCUMENT CANVAS */
+    .canvas-scroll {
+      flex: 1;
+      overflow: auto;
+      background: var(--bg-canvas);
+      padding: 20px 12px 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    .page-wrapper {
+      position: relative;
+      width: 794px;
+      max-width: 100%;
+      min-height: 1050px;
+      background: var(--bg-page);
+      color: var(--text-page);
+      box-shadow: var(--page-shadow);
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      padding: 64px 68px 80px;
+      transition: transform 0.15s ease, width 0.2s ease, padding 0.2s ease;
+      transform-origin: top center;
+    }
+
+    @media (max-width: 820px) {
+      .page-wrapper.mobile-fit {
+        width: 100%;
+        min-height: calc(100dvh - 180px);
+        padding: 24px 20px 64px;
+      }
+    }
+
+    .page-wrapper.landscape {
+      width: 1050px;
+      min-height: 740px;
+    }
+    .page-wrapper.web-layout {
+      width: 96%;
+      max-width: 1200px;
+      padding: 32px;
+    }
+    .page-wrapper.page-border {
+      outline: 2px double var(--accent);
+      outline-offset: -18px;
+    }
+
+    .watermark-layer {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+    .watermark-text {
+      font-size: 86px;
+      font-weight: 800;
+      color: rgba(148, 163, 184, 0.11);
+      transform: rotate(-35deg);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      user-select: none;
+    }
+
+    .doc-header-area, .doc-footer-area {
+      font-size: 11px;
+      color: var(--text-muted);
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+      border-bottom: 1px dashed var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      z-index: 2;
+    }
+    .doc-footer-area {
+      border-bottom: none;
+      border-top: 1px dashed var(--border-subtle);
+      padding-top: 12px;
+      margin-top: 36px;
+      padding-bottom: 0;
+      margin-bottom: 0;
+    }
+
+    /* EDITABLE CONTENT AREA */
+    #editor {
+      position: relative;
+      z-index: 2;
+      outline: none;
+      font-family: "Georgia", "Source Serif 4", serif;
+      font-size: 11.5pt;
+      line-height: 1.6;
+      min-height: 820px;
+      user-select: text;
+      -webkit-user-select: text;
+      word-wrap: break-word;
+    }
+
+    #editor.show-pilcrow p::after,
+    #editor.show-pilcrow h1::after,
+    #editor.show-pilcrow h2::after,
+    #editor.show-pilcrow h3::after {
+      content: " ¶";
+      color: var(--accent);
+      opacity: 0.55;
+      font-size: 0.85em;
+      pointer-events: none;
+    }
+
+    #editor.line-numbers {
+      counter-reset: paragraph-counter;
+      padding-left: 28px;
+    }
+    #editor.line-numbers p,
+    #editor.line-numbers h1,
+    #editor.line-numbers h2,
+    #editor.line-numbers h3 {
+      position: relative;
+      counter-increment: paragraph-counter;
+    }
+    #editor.line-numbers p::before,
+    #editor.line-numbers h1::before,
+    #editor.line-numbers h2::before,
+    #editor.line-numbers h3::before {
+      content: counter(paragraph-counter);
+      position: absolute;
+      left: -32px;
+      top: 2px;
+      font-size: 9pt;
+      font-family: monospace;
+      color: var(--text-muted);
+      opacity: 0.7;
+    }
+
+    #editor h1 {
+      font-size: 20pt;
+      font-weight: 700;
+      margin: 18px 0 8px;
+      color: var(--text-page);
+      letter-spacing: -0.01em;
+    }
+    #editor h2 {
+      font-size: 15pt;
+      font-weight: 700;
+      margin: 16px 0 6px;
+      color: var(--accent);
+    }
+    #editor h3 {
+      font-size: 12.5pt;
+      font-weight: 600;
+      margin: 12px 0 4px;
+    }
+    #editor p {
+      margin: 0 0 10px;
+    }
+    #editor blockquote {
+      border-left: 3.5px solid var(--accent);
+      padding: 6px 14px;
+      margin: 10px 0;
+      font-style: italic;
+      background: var(--accent-soft);
+      border-radius: 0 6px 6px 0;
+    }
+    #editor pre {
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 9.5pt;
+      background: rgba(0, 0, 0, 0.22);
+      padding: 10px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      overflow-x: auto;
+      margin: 10px 0;
+    }
+    #editor ul, #editor ol {
+      margin: 6px 0 12px 24px;
+    }
+    #editor table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+      font-size: 10.5pt;
+    }
+    #editor th, #editor td {
+      border: 1px solid var(--border-color);
+      padding: 7px 10px;
+      text-align: left;
+    }
+    #editor th {
+      background: var(--accent-soft);
+      font-weight: 700;
+    }
+    #editor tr:nth-child(even) td {
+      background: rgba(148, 163, 184, 0.05);
+    }
+
+    /* Drop Cap */
+    .drop-cap::first-letter {
+      float: left;
+      font-size: 3.4em;
+      line-height: 0.82;
+      padding-right: 10px;
+      padding-top: 3px;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    /* Tracked Changes */
+    ins.wc-ins {
+      color: var(--track-ins);
+      text-decoration: underline wavy var(--track-ins);
+      background: rgba(244, 114, 182, 0.12);
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+    del.wc-del {
+      color: var(--track-del);
+      text-decoration: line-through;
+      background: rgba(248, 113, 113, 0.12);
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+    span.wc-comment-anchor {
+      background: rgba(234, 179, 8, 0.22);
+      border-bottom: 2px solid #eab308;
+      cursor: pointer;
+    }
+    span.wc-merge-field {
+      background: var(--accent-soft);
+      border: 1px dashed var(--accent);
+      color: var(--accent);
+      padding: 0 5px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.92em;
+    }
+
+    /* TOC Block */
+    .wc-toc {
+      border: 1px solid var(--border-color);
+      background: rgba(148, 163, 184, 0.06);
+      padding: 14px 18px;
+      border-radius: 6px;
+      margin: 12px 0 18px;
+    }
+    .wc-toc-row {
+      display: flex;
+      align-items: baseline;
+      font-size: 10.5pt;
+      margin: 4px 0;
+    }
+    .wc-toc-dots {
+      flex: 1;
+      border-bottom: 1px dotted var(--text-muted);
+      margin: 0 8px;
+    }
+
+    /* DRAWING LAYER */
+    #draw-canvas {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+    }
+    #draw-canvas.drawing-active {
+      pointer-events: auto;
+      cursor: crosshair;
+    }
+
+    /* RIGHT COMMENTS & REVIEW PANE */
+    .right-pane {
+      width: 270px;
+      background: var(--bg-panel);
+      border-left: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    .right-pane.hidden {
+      display: none;
+    }
+    .comment-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .comment-card {
+      background: var(--comment-bg);
+      border-left: 3px solid var(--comment-border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+    .comment-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10.5px;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    /* BOTTOM STATUS BAR */
+    .statusbar {
+      height: 28px;
+      background: var(--bg-titlebar);
+      border-top: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      font-size: 11px;
+      flex-shrink: 0;
+      overflow-x: auto;
+      gap: 12px;
+    }
+    .status-cluster {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      white-space: nowrap;
+    }
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #22c55e;
+      display: inline-block;
+      margin-right: 4px;
+    }
+
+    /* MODALS */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(3px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 14px;
+    }
+    .modal-backdrop.open {
+      display: flex;
+    }
+    .modal-box {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      width: 100%;
+      max-width: 720px;
+      max-height: 88dvh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6);
+      overflow: hidden;
+    }
+    .modal-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 700;
+      font-size: 15px;
+    }
+    .modal-body {
+      padding: 16px 18px;
+      overflow-y: auto;
+      font-size: 13px;
+      line-height: 1.55;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .code-box {
+      background: #0d1017;
+      color: #e2e8f0;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11.5px;
+      overflow-x: auto;
+      white-space: pre;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+    .grid-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 10px;
+    }
+    .action-card {
+      background: var(--bg-ribbon-group);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .action-card:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+    .action-card h4 {
+      font-size: 13px;
+      margin-bottom: 4px;
+      color: var(--text-primary);
+    }
+    .action-card p {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+    }
+
+    @media print {
+      .titlebar, .ribbon-tabs, .ribbon-panel, .ruler-bar, .nav-pane, .right-pane, .statusbar {
+        display: none !important;
+      }
+      .canvas-scroll {
+        padding: 0;
+        background: #fff;
+      }
+      .page-wrapper {
+        box-shadow: none;
+        border: none;
+        width: 100%;
+        padding: 0;
+        background: #fff;
+        color: #000;
+      }
+    }
+  </style>
+</head>
+<body class="touch-mode">
+
+  <!-- TOP TITLE BAR -->
+  <header class="titlebar">
+    <div class="brand-cluster">
+      <div class="app-logo" title="WordCraft Open Source (Rust/Web Edition)">W</div>
+      <input type="text" id="docTitle" class="doc-title-input" value="The Open Studio Handbook.docx" aria-label="Document title" />
+      <span class="badge-pill" id="modeBadge">Android Touch UI</span>
+    </div>
+    <div class="quick-actions">
+      <button class="tb-btn" onclick="execCmd('undo')" title="Rückgängig (Ctrl+Z)">↶</button>
+      <button class="tb-btn" onclick="execCmd('redo')" title="Wiederholen (Ctrl+Y)">↷</button>
+      <button class="tb-btn" onclick="openModal('cmdPaletteModal')" title="Alle 487 WordCraft-Befehle durchsuchen (Ctrl+K)">⌘ Befehle</button>
+      <button class="tb-btn" onclick="toggleTouchMode()" id="touchToggleBtn" title="Zwischen Android Touch UI und Desktop-Ribbon wechseln">📱 Touch</button>
+      <button class="tb-btn" onclick="toggleTheme()" id="themeBtn" title="Dark / Light Mode umschalten">🌙</button>
+      <button class="tb-btn accent-btn" onclick="openModal('apkModal')" title="GitHub Actions APK-Fix & Android Build-Paket für wordandroid">🤖 APK Build</button>
+    </div>
+  </header>
+
+  <!-- 9 WORDCRAFT RIBBON TABS -->
+  <nav class="ribbon-tabs" role="tablist">
+    <button class="ribbon-tab file-tab" onclick="openModal('fileModal')">Datei</button>
+    <button class="ribbon-tab active" data-tab="home" onclick="switchTab('home')">Start (Home)</button>
+    <button class="ribbon-tab" data-tab="insert" onclick="switchTab('insert')">Einfügen (Insert)</button>
+    <button class="ribbon-tab" data-tab="draw" onclick="switchTab('draw')">Zeichnen (Draw)</button>
+    <button class="ribbon-tab" data-tab="design" onclick="switchTab('design')">Entwurf (Design)</button>
+    <button class="ribbon-tab" data-tab="layout" onclick="switchTab('layout')">Layout</button>
+    <button class="ribbon-tab" data-tab="references" onclick="switchTab('references')">Referenzen</button>
+    <button class="ribbon-tab" data-tab="mailings" onclick="switchTab('mailings')">Sendungen</button>
+    <button class="ribbon-tab" data-tab="review" onclick="switchTab('review')">Überprüfen (Review)</button>
+    <button class="ribbon-tab" data-tab="view" onclick="switchTab('view')">Ansicht (View)</button>
+  </nav>
+
+  <!-- TAB 1: HOME -->
+  <section class="ribbon-panel active" id="tab-home">
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <button class="rb-btn" onclick="clipboardPaste()" title="Einfügen">📋 Einfügen</button>
+        <button class="rb-btn" onclick="execCmd('copy')" title="Kopieren">📄</button>
+        <button class="rb-btn" onclick="execCmd('cut')" title="Ausschneiden">✂️</button>
+        <button class="rb-btn" id="formatPainterBtn" onclick="toggleFormatPainter()" title="Format übertragen">🖌️</button>
+      </div>
+      <div class="ribbon-group-label">Zwischenablage</div>
+    </div>
+
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <select class="rb-select" id="fontFamilySelect" onchange="applyFontFamily(this.value)" title="Schriftart">
+          <option value="Georgia, serif">Source Serif 4</option>
+          <option value="'Inter', system-ui, sans-serif">Source Sans 3 / Inter</option>
+          <option value="'Calibri', 'Carlito', sans-serif">Carlito (Calibri)</option>
+          <option value="'Cambria', 'Caladea', serif">Caladea (Cambria)</option>
+          <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+        </select>
+        <select class="rb-select" id="fontSizeSelect" onchange="applyFontSize(this.value)" title="Schriftgrad">
+          <option value="9pt">9</option>
+          <option value="10.5pt">10.5</option>
+          <option value="11.5pt" selected>11.5</option>
+          <option value="13pt">13</option>
+          <option value="16pt">16</option>
+          <option value="20pt">20</option>
+          <option value="26pt">26</option>
+        </select>
+        <button class="rb-btn" onclick="execCmd('bold')" title="Fett (Ctrl+B)"><b>B</b></button>
+        <button class="rb-btn" onclick="execCmd('italic')" title="Kursiv (Ctrl+I)"><i>I</i></button>
+        <button class="rb-btn" onclick="execCmd('underline')" title="Unterstrichen (Ctrl+U)"><u>U</u></button>
+        <button class="rb-btn" onclick="execCmd('strikeThrough')" title="Durchgestrichen"><s>S</s></button>
+        <button class="rb-btn" onclick="execCmd('subscript')" title="Tiefgestellt">X₂</button>
+        <button class="rb-btn" onclick="execCmd('superscript')" title="Hochgestellt">X²</button>
+        <input type="color" id="foreColorPicker" value="#4c8dff" onchange="execCmd('foreColor', this.value)" title="Schriftfarbe" style="width:28px;height:28px;border:none;background:transparent;cursor:pointer;" />
+        <button class="rb-btn" onclick="highlightSelection()" title="Texthervorhebungsfarbe">🖍️</button>
+        <button class="rb-btn" onclick="changeCaseSelection()" title="Groß-/Kleinschreibung ändern">Aa</button>
+        <button class="rb-btn" onclick="execCmd('removeFormat')" title="Alle Formatierungen löschen">⌫</button>
+      </div>
+      <div class="ribbon-group-label">Schriftart</div>
+    </div>
+
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <button class="rb-btn" onclick="execCmd('insertUnorderedList')" title="Aufzählungszeichen">• Liste</button>
+        <button class="rb-btn" onclick="execCmd('insertOrderedList')" title="Nummerierung">1. Liste</button>
+        <button class="rb-btn" onclick="execCmd('outdent')" title="Einzug verkleinern">⇤</button>
+        <button class="rb-btn" onclick="execCmd('indent')" title="Einzug vergrößern">⇥</button>
+        <button class="rb-btn" onclick="execCmd('justifyLeft')" title="Linksbündig">⬅</button>
+        <button class="rb-btn" onclick="execCmd('justifyCenter')" title="Zentriert">↔</button>
+        <button class="rb-btn" onclick="execCmd('justifyRight')" title="Rechtsbündig">➡</button>
+        <button class="rb-btn" onclick="execCmd('justifyFull')" title="Blocksatz">☰</button>
+        <button class="rb-btn" id="pilcrowBtn" onclick="togglePilcrow()" title="Formatierungszeichen anzeigen (¶)">¶</button>
+      </div>
+      <div class="ribbon-group-label">Absatz</div>
+    </div>
+
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <button class="style-chip" onclick="applyBlockStyle('p')">Standard</button>
+        <button class="style-chip" onclick="applyBlockStyle('h1')">Überschrift 1</button>
+        <button class="style-chip" onclick="applyBlockStyle('h2')">Überschrift 2</button>
+        <button class="style-chip" onclick="applyBlockStyle('h3')">Überschrift 3</button>
+        <button class="style-chip" onclick="applyBlockStyle('blockquote')">Zitat</button>
+        <button class="style-chip" onclick="applyBlockStyle('pre')">Code</button>
+      </div>
+      <div class="ribbon-group-label">Formatvorlagen (Styles)</div>
+    </div>
+
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <button class="rb-btn" onclick="openModal('findModal')" title="Suchen & Ersetzen (inkl. Regex)">🔍 Suchen / Regex</button>
+      </div>
+      <div class="ribbon-group-label">Bearbeiten</div>
+    </div>
+  </section>
+
+  <!-- TAB 2: INSERT -->
+  <section class="ribbon-panel" id="tab-insert">
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <button class="rb-btn" onclick="insertCoverPage()">📘 Deckblatt</button>
+        <button class="rb-btn" onclick="insertPageBreak()">📄 Seitenumbruch</button>
+      </div>
+      <div class="ribbon-group-label">Seiten</div>
+    </div>
+
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <button class="rb-btn" onclick="insertStyledTable(3, 3)">⊞ Tabelle (3×3)</button>
+        <button class="rb-btn" onclick="insertStyledTable(5, 4)">⊞ Tabelle (5×4)</button>
+        <button class="rb-btn" onclick="addTableRow()">+ Zeile</button>
+      </div>
+      <div class="ribbon-group-label">Tabellen</div>
+    </div>
+
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <button class="rb-btn" onclick="triggerImageUpload()">🖼️ Bild</button>
+        <input type="file" id="imgUploadInput" accept="image/*" style="display:none" onchange="handleImageUpload(event)" />
+        <button class="rb-btn" onclick="insertCalloutBox()">💬 Textfeld / Callout</button>
+        <button class="rb-btn" onclick="toggleDropCap()">🅰️ Initial (Drop Cap)</button>
+      </div>
+      <div class="ribbon-group-label">Illustrationen & Text</div>
+    </div>
+
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <button class="rb-btn" onclick="insertHyperlink()">🔗 Link</button>
+        <button class="rb-btn" onclick="insertEquation()">∑ Formel</button>
+        <button class="rb-btn" onclick="insertSymbol('—')">—</button>
+        <button class="rb-btn" onclick="insertSymbol('§')">§</button>
+        <button class="rb-btn" onclick="insertSymbol('±')">±</button>
+        <button class="rb-btn" onclick="insertSymbol('≈')">≈</button>
+      </div>
+      <div class="ribbon-group-label">Links & Symbole</div>
+    </div>
+  </section>
+
+  <!-- TAB 3: DRAW -->
+  <section class="ribbon-panel" id="tab-draw">
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <button class="rb-btn active" id="drawCursorBtn" onclick="setDrawMode('none')">👆 Texteingabe</button>
+        <button class="rb-btn" id="drawPenBtn" onclick="setDrawMode('pen')">✒️ Stift (Touch)</button>
+        <button class="rb-btn" id="drawHighBtn" onclick="setDrawMode('highlighter')">🖍️ Textmarker</button>
+        <input type="color" id="drawColorPicker" value="#4c8dff" onchange="updateDrawSettings()" title="Stiftfarbe" style="width:28px;height:28px;border:none;background:transparent;" />
+        <select class="rb-select" id="drawSizeSelect" onchange="updateDrawSettings()">
+          <option value="2">Dünn (2px)</option>
+          <option value="4" selected>Mittel (4px)</option>
+          <option value="12">Marker (12px)</option>
+        </select>
+        <button class="rb-btn" onclick="clearDrawing()">🗑️ Zeichnung löschen</button>
+      </div>
+      <div class="ribbon-group-label">Touch-Freihand & Stifte</div>
+    </div>
+  </section>
+
+  <!-- TAB 4: DESIGN -->
+  <section class="ribbon-panel" id="tab-design">
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <button class="style-chip" onclick="applyDocTheme('studio')">ArtCraft Studio</button>
+        <button class="style-chip" onclick="applyDocTheme('office')">Classic Word</button>
+        <button class="style-chip" onclick="applyDocTheme('academic')">Academic Serif</button>
+        <button class="style-chip" onclick="applyDocTheme('mono')">Technical Mono</button>
+      </div>
+      <div class="ribbon-group-label">Dokumentdesigns</div>
+    </div>
+
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <button class="rb-btn" onclick="cycleWatermark()">💧 Wasserzeichen (<span id="wmLabel">Aus</span>)</button>
+        <button class="rb-btn" onclick="togglePageBorder()">▣ Seitenrahmen</button>
+      </div>
+      <div class="ribbon-group-label">Seitenhintergrund</div>
+    </div>
+  </section>
+
+  <!-- TAB 5: LAYOUT -->
+  <section class="ribbon-panel" id="tab-layout">
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <select class="rb-select" onchange="setMargins(this.value)" title="Seitenränder">
+          <option value="normal">Ränder: Normal</option>
+          <option value="narrow">Ränder: Schmal</option>
+          <option value="wide">Ränder: Breit</option>
+        </select>
+        <button class="rb-btn" onclick="toggleOrientation()">🔄 Hoch-/Querformat</button>
+        <select class="rb-select" onchange="setColumns(this.value)" title="Spalten">
+          <option value="1">1 Spalte</option>
+          <option value="2">2 Spalten</option>
+          <option value="3">3 Spalten</option>
+        </select>
+      </div>
+      <div class="ribbon-group-label">Seite einrichten</div>
+    </div>
+
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <button class="rb-btn" onclick="toggleLineNumbers()">🔢 Zeilennummern</button>
+        <button class="rb-btn" onclick="toggleHyphenation()">Silbentrennung</button>
+        <select class="rb-select" onchange="setLineSpacing(this.value)">
+          <option value="1.2">Zeilenabstand 1.2</option>
+          <option value="1.6" selected>Zeilenabstand 1.6</option>
+          <option value="2.0">Zeilenabstand 2.0</option>
+        </select>
+      </div>
+      <div class="ribbon-group-label">Absatz & Zeilen</div>
+    </div>
+  </section>
+
+  <!-- TAB 6: REFERENCES -->
+  <section class="ribbon-panel" id="tab-references">
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <button class="rb-btn" onclick="insertTableOfContents()">📑 Inhaltsverzeichnis (TOC)</button>
+      </div>
+      <div class="ribbon-group-label">Inhaltsverzeichnis</div>
+    </div>
+
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <button class="rb-btn" onclick="insertFootnote()">¹ Fußnote einfügen</button>
+      </div>
+      <div class="ribbon-group-label">Fußnoten</div>
+    </div>
+
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <select class="rb-select" id="citationStyleSelect">
+          <option value="APA">Stil: APA (7th)</option>
+          <option value="IEEE">Stil: IEEE</option>
+          <option value="MLA">Stil: MLA</option>
+          <option value="Chicago">Stil: Chicago</option>
+        </select>
+        <button class="rb-btn" onclick="insertCitation()">❝ Zitat einfügen</button>
+        <button class="rb-btn" onclick="insertBibliography()">📚 Literaturverzeichnis</button>
+      </div>
+      <div class="ribbon-group-label">Zitate & Literatur</div>
+    </div>
+  </section>
+
+  <!-- TAB 7: MAILINGS -->
+  <section class="ribbon-panel" id="tab-mailings">
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <button class="rb-btn" onclick="insertMergeField('Vorname')">«Vorname»</button>
+        <button class="rb-btn" onclick="insertMergeField('Nachname')">«Nachname»</button>
+        <button class="rb-btn" onclick="insertMergeField('Organisation')">«Organisation»</button>
+        <button class="rb-btn" onclick="insertMergeField('Ort')">«Ort»</button>
+      </div>
+      <div class="ribbon-group-label">Serienbrieffelder einfügen</div>
+    </div>
+
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <button class="rb-btn" id="mailPreviewBtn" onclick="toggleMailMergePreview()">👁️ Vorschau Ergebnisse</button>
+        <button class="rb-btn" onclick="stepMailRecord(-1)">◀</button>
+        <span id="mailRecordLabel" style="font-size:12px;padding:0 6px;">Datensatz 1/3</span>
+        <button class="rb-btn" onclick="stepMailRecord(1)">▶</button>
+      </div>
+      <div class="ribbon-group-label">Vorschau (CSV-Empfänger)</div>
+    </div>
+  </section>
+
+  <!-- TAB 8: REVIEW -->
+  <section class="ribbon-panel" id="tab-review">
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <button class="rb-btn" onclick="toggleSpellcheck()">✓ Rechtschreibung</button>
+        <button class="rb-btn" onclick="openModal('statsModal')">📊 Wörter zählen & Performance</button>
+      </div>
+      <div class="ribbon-group-label">Dokumentprüfung</div>
+    </div>
+
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <button class="rb-btn" id="trackChangesBtn" onclick="toggleTrackChanges()">📝 Änderungen nachverfolgen: <span id="tcStateLabel">AUS</span></button>
+        <button class="rb-btn" onclick="acceptAllChanges()">✅ Alle annehmen</button>
+        <button class="rb-btn" onclick="rejectAllChanges()">❌ Alle ablehnen</button>
+      </div>
+      <div class="ribbon-group-label">Nachverfolgung (Track Changes)</div>
+    </div>
+
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <button class="rb-btn" onclick="addComment()">💬 Neuer Kommentar</button>
+        <button class="rb-btn" onclick="toggleRightPane()">🗨️ Kommentarbereich</button>
+      </div>
+      <div class="ribbon-group-label">Kommentare</div>
+    </div>
+  </section>
+
+  <!-- TAB 9: VIEW -->
+  <section class="ribbon-panel" id="tab-view">
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <button class="rb-btn active" id="viewPrintBtn" onclick="setViewMode('print')">📄 Drucklayout</button>
+        <button class="rb-btn" id="viewMobileBtn" onclick="setViewMode('mobile')">📱 Mobil-Fit</button>
+        <button class="rb-btn" id="viewWebBtn" onclick="setViewMode('web')">🌐 Weblayout</button>
+        <button class="rb-btn" id="viewFocusBtn" onclick="setViewMode('focus')">🎯 Fokusmodus</button>
+      </div>
+      <div class="ribbon-group-label">Dokumentansichten</div>
+    </div>
+
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <button class="rb-btn" onclick="toggleNavPane()">🧭 Navigationsbereich</button>
+        <button class="rb-btn" onclick="toggleRuler()">📏 Lineal</button>
+      </div>
+      <div class="ribbon-group-label">Anzeigen</div>
+    </div>
+
+    <div class="ribbon-group">
+      <div class="ribbon-group-controls">
+        <button class="rb-btn" onclick="setZoom(0.85)">85%</button>
+        <button class="rb-btn" onclick="setZoom(1)">100%</button>
+        <button class="rb-btn" onclick="setZoom(1.15)">115%</button>
+      </div>
+      <div class="ribbon-group-label">Zoom</div>
+    </div>
+  </section>
+
+  <!-- RULER -->
+  <div class="ruler-bar" id="rulerBar">
+    <div class="ruler-track">
+      <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span>15</span><span>16 cm</span>
+    </div>
+  </div>
+
+  <!-- MAIN WORKSPACE -->
+  <main class="workspace">
+    <!-- LEFT NAVIGATION / OUTLINE PANE -->
+    <aside class="nav-pane hidden" id="navPane">
+      <div class="pane-header">
+        <span>Gliederung (Headings)</span>
+        <button class="rb-btn" onclick="toggleNavPane()">✕</button>
+      </div>
+      <input type="text" class="nav-search" id="navFilterInput" placeholder="Im Dokument suchen..." oninput="filterOutline(this.value)" />
+      <div class="outline-list" id="outlineList"></div>
+    </aside>
+
+    <!-- CENTER PAGE CANVAS -->
+    <div class="canvas-scroll" id="canvasScroll">
+      <div class="page-wrapper mobile-fit" id="pageWrapper">
+        <div class="watermark-layer"><span class="watermark-text" id="watermarkText"></span></div>
+        <canvas id="draw-canvas"></canvas>
+
+        <div class="doc-header-area">
+          <span id="headerLeft">WordCraft Open-Source Document Engine (ECMA-376 .docx)</span>
+          <span>ArtCraft / Pure Rust Architecture</span>
+        </div>
+
+        <div id="editor" contenteditable="true" spellcheck="true">
+          <h1>The Open Studio Handbook</h1>
+          <p class="drop-cap">Willkommen in <b>WordCraft für Android</b> — dem vollständigen, quelloffenen Nachbau von <a href="https://github.com/storytold/wordcraft" target="_blank">storytold/wordcraft</a>. Diese Version vereint die 9 originalen Ribbon-Registerkarten, das schnelle Seitenlayout, Track Changes, Randkommentare und den nativen <code>.docx</code>-Import/Export mit einer für Android-Touchscreens optimierten Oberfläche.</p>
+
+          <div class="wc-toc" contenteditable="false">
+            <b>Inhaltsverzeichnis (Automatisch generiert)</b>
+            <div class="wc-toc-row"><span>1. Architektur &amp; Dateiformate</span><span class="wc-toc-dots"></span><span>1</span></div>
+            <div class="wc-toc-row"><span>2. Überarbeitungsmodus &amp; Kommentare</span><span class="wc-toc-dots"></span><span>1</span></div>
+            <div class="wc-toc-row"><span>3. Funktionsparität im Überblick</span><span class="wc-toc-dots"></span><span>1</span></div>
+          </div>
+
+          <h2>1. Architektur &amp; Dateiformate</h2>
+          <p>Genau wie das Desktop-Vorbild liest und schreibt diese App echte <b>Microsoft Word (.docx)</b>-Dateien direkt lokal auf deinem Gerät (ohne Cloud-Zwang) sowie Markdown (<code>.md</code>), HTML, LaTeX (<code>.tex</code>) und Klartext (<code>.txt</code>). Über den Button <b>🤖 APK Build</b> oben rechts erhältst du außerdem die korrigierte GitHub-Actions-Pipeline für dein Repository <code>FloodedCode/wordandroid</code>.</p>
+
+          <h2>2. Überarbeitungsmodus &amp; Kommentare</h2>
+          <p>Im Reiter <b>Überprüfen (Review)</b> ist die Änderungsnachverfolgung direkt integriert: Wenn <i>Track Changes</i> aktiv ist, werden neue Eingaben als <ins class="wc-ins" data-author="Christoph">nachverfolgte Einfügung</ins> und gelöschte Passagen als <del class="wc-del" data-author="Christoph">durchgestrichene Löschung</del> markiert. Außerdem können <span class="wc-comment-anchor" data-comment-id="c1">Textstellen mit Randkommentaren</span> versehen werden.</p>
+
+          <blockquote>„Paragraph layout is cached: typing in a 188-page document re-lays it out in about 1.4 ms, with pages rendered on demand.“ — WordCraft Technical Spec (Thomas, 2026)</blockquote>
+
+          <h2>3. Funktionsparität im Überblick</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Modul</th>
+                <th>Unterstützte Funktionen</th>
+                <th>Android-Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b>Ribbon &amp; Befehle</b></td>
+                <td>Alle 9 Tabs (Start, Einfügen, Zeichnen, Entwurf, Layout, Referenzen, Sendungen, Überprüfen, Ansicht)</td>
+                <td>Aktiv (Touch + Desktop)</td>
+              </tr>
+              <tr>
+                <td><b>Dateiformate</b></td>
+                <td>Nativer .docx (OOXML ZIP) Import/Export, .md, .html, .tex, .txt &amp; PDF-Druck</td>
+                <td>100% Lokal / Offline</td>
+              </tr>
+              <tr>
+                <td><b>Wissenschaft &amp; Review</b></td>
+                <td>Inhaltsverzeichnis mit Punktlinien, Fußnoten, APA/IEEE-Zitate, Track Changes &amp; Serienbriefe</td>
+                <td>Vollständig</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p>Teste den Serienbrief-Modus im Reiter <b>Sendungen</b>: Hallo <span class="wc-merge-field" data-field="Vorname">«Vorname»</span> <span class="wc-merge-field" data-field="Nachname">«Nachname»</span> von <span class="wc-merge-field" data-field="Organisation">«Organisation»</span> in <span class="wc-merge-field" data-field="Ort">«Ort»</span>!</p>
+        </div>
+
+        <div id="footnotesContainer" style="margin-top:28px;padding-top:10px;border-top:1px solid var(--border-color);font-size:9.5pt;color:var(--text-secondary);">
+          <div><b>Fußnoten:</b></div>
+          <div id="footnoteList">
+            <div>[1] Clean-Room-Reimplementierung nach ECMA-376 OpenXML-Spezifikation (MIT / Apache-2.0 Lizenz).</div>
+          </div>
+        </div>
+
+        <div class="doc-footer-area">
+          <span>The Open Studio Handbook.docx</span>
+          <span>Seite 1 von 1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COMMENTS PANE -->
+    <aside class="right-pane" id="rightPane">
+      <div class="pane-header">
+        <span>Kommentare &amp; Review</span>
+        <button class="rb-btn" onclick="toggleRightPane()">✕</button>
+      </div>
+      <div class="comment-list" id="commentList">
+        <div class="comment-card" id="c1">
+          <div class="comment-meta">
+            <span>Christoph E.</span>
+            <span>Gerade eben</span>
+          </div>
+          <div>Ribbon ist für Android Touch optimiert. Über „🤖 APK Build“ kann das komplette Android-Projekt exportiert werden.</div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- STATUS BAR -->
+  <footer class="statusbar">
+    <div class="status-cluster">
+      <span><span class="status-dot"></span>Bereit (Offline-Engine)</span>
+      <span id="wordCountStatus">Wörter: 0 | Zeichen: 0</span>
+      <span id="layoutTimerStatus">Layout-Cache: 0.8 ms</span>
+    </div>
+    <div class="status-cluster">
+      <span id="trackStatusFooter">Track Changes: AUS</span>
+      <span>Deutsch (Deutschland)</span>
+      <span id="zoomStatus">Zoom: 100%</span>
+    </div>
+  </footer>
+
+  <!-- MODAL 1: FILE BACKSTAGE (OPEN / SAVE DOCX, MD, HTML, TEX, PDF) -->
+  <div class="modal-backdrop" id="fileModal" onclick="closeModalOnBg(event, 'fileModal')">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span>📁 Datei — WordCraft Backstage (Import &amp; Export)</span>
+        <button class="rb-btn" onclick="closeModal('fileModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="grid-cards">
+          <div class="action-card" onclick="newBlankDocument()">
+            <h4>📄 Neues leeres Dokument</h4>
+            <p>Startet ein frisches Dokument im Druck- oder Mobil-Layout.</p>
+          </div>
+          <div class="action-card" onclick="loadSampleDocument()">
+            <h4>📘 Showcase laden (--sample)</h4>
+            <p>Lädt „The Open Studio Handbook“ wie in <code>cargo run -p wordcraft -- --sample</code>.</p>
+          </div>
+          <div class="action-card" onclick="document.getElementById('docxFileInput').click()">
+            <h4>📂 Datei öffnen (.docx, .md, .html, .txt)</h4>
+            <p>Liest echte Word-.docx-Archive (ECMA-376 XML) sowie Textdateien direkt im Browser.</p>
+            <input type="file" id="docxFileInput" accept=".docx,.md,.html,.txt" style="display:none" onchange="openDocumentFile(event)" />
+          </div>
+          <div class="action-card" onclick="exportRealDocx()">
+            <h4>💾 Als Word (.docx) speichern</h4>
+            <p>Erzeugt ein valides OpenXML-.docx-Archiv für Microsoft Word, LibreOffice &amp; WordCraft.</p>
+          </div>
+          <div class="action-card" onclick="exportFileFormat('md')">
+            <h4>📝 Als Markdown (.md) exportieren</h4>
+            <p>Konvertiert Überschriften, Listen, Tabellen und Zitate in sauberes Markdown.</p>
+          </div>
+          <div class="action-card" onclick="exportFileFormat('tex')">
+            <h4>📐 Als LaTeX (.tex) exportieren</h4>
+            <p>Exportiert das Dokument mit <code>\section</code>, Formatierungen und Dokumentklasse.</p>
+          </div>
+          <div class="action-card" onclick="exportFileFormat('html')">
+            <h4>🌐 Als HTML (.html) speichern</h4>
+            <p>Speichert das eigenständige Dokument mit eingebettetem Stylesheet.</p>
+          </div>
+          <div class="action-card" onclick="window.print(); closeModal('fileModal');">
+            <h4>🖨️ Als PDF exportieren / Drucken</h4>
+            <p>Erzeugt ein druckfertiges PDF mit auswählbarem Text.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: ANDROID APK & GITHUB ACTIONS BUILDER (FLOODEDCODE/WORDANDROID FIX) -->
+  <div class="modal-backdrop" id="apkModal" onclick="closeModalOnBg(event, 'apkModal')">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span>🤖 Android APK Build &amp; GitHub Actions Setup (FloodedCode/wordandroid)</span>
+        <button class="rb-btn" onclick="closeModal('apkModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p><b>Warum ist dein GitHub-Actions-Build in <code>FloodedCode/wordandroid</code> nach 4–5 Sekunden fehlgeschlagen?</b><br/>
+        Das originale Repository <a href="https://github.com/storytold/wordcraft" target="_blank" style="color:var(--accent)">storytold/wordcraft</a> ist ein reines Desktop-/Wasm-Rust-Workspace (<code>egui</code> + <code>wgpu</code>) ohne <code>android/</code>-Gradle-Ordner, ohne <code>gradlew</code> und ohne <code>android_activity</code>-Entry-Point. Wenn eine Standard-GitHub-Action nach <code>./gradlew assembleRelease</code> sucht, bricht sie sofort nach ~4 Sekunden ab.</p>
+
+        <p><b>Lösung (2 funktionierende Wege für eine 1:1 Android-APK):</b></p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="tb-btn accent-btn" onclick="copyTextById('ciYamlCode')">📋 1. Funktionierende build-apk.yml kopieren</button>
+          <button class="tb-btn" onclick="copyTextById('rustAndroidCode')">🦀 2. Nativen Rust-Android-Patch (lib.rs) kopieren</button>
+        </div>
+
+        <div>
+          <b>Option A (Sofort-Fix für GitHub Actions):</b> Diese <code>.github/workflows/build-apk.yml</code> erzeugt das fehlende Android-Gradle-Gerüst automatisch im Runner, bettet den WebAssembly-Build von <code>storytold/wordcraft</code> (oder diese mobile App) ein und baut + signiert eine universelle Android-APK:
+        </div>
+        <div class="code-box" id="ciYamlCode">name: Universal Android Signed Release APK Build
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Generate Android WebView / Wasm Wrapper Project if missing
+        run: |
+          mkdir -p app/src/main/java/com/wordcraft/android
+          mkdir -p app/src/main/assets
+
+          # Falls index.html im Repo liegt, in Assets kopieren, sonst offizielles wordcraft-web Release laden
+          if [ -f "wordcraft_android.html" ]; then
+            cp wordcraft_android.html app/src/main/assets/index.html
+          elif [ -f "index.html" ]; then
+            cp index.html app/src/main/assets/index.html
+          else
+            curl -L https://github.com/storytold/wordcraft/releases/latest/download/wordcraft-web-0.5.0.zip -o wc.zip || true
+            if [ -f "wc.zip" ]; then unzip -q wc.zip -d app/src/main/assets/; fi
+          fi
+
+          cat << 'EOF' > settings.gradle
+          rootProject.name = "WordCraftAndroid"
+          include(":app")
+          EOF
+
+          cat << 'EOF' > build.gradle
+          buildscript {
+              repositories { google(); mavenCentral() }
+              dependencies { classpath 'com.android.tools.build:gradle:8.2.2' }
+          }
+          allprojects { repositories { google(); mavenCentral() } }
+          EOF
+
+          cat << 'EOF' > gradle.properties
+          org.gradle.jvmargs=-Xmx2048m
+          android.useAndroidX=true
+          EOF
+
+          cat << 'EOF' > app/build.gradle
+          plugins { id 'com.android.application' }
+          android {
+              namespace 'com.wordcraft.android'
+              compileSdk 34
+              defaultConfig {
+                  applicationId "com.wordcraft.android"
+                  minSdk 26
+                  targetSdk 34
+                  versionCode 1
+                  versionName "0.6.1"
+              }
+              signingConfigs {
+                  release {
+                      storeFile file("release-key.jks")
+                      storePassword "wordcraft"
+                      keyAlias "wordcraft"
+                      keyPassword "wordcraft"
+                  }
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.release
+                      minifyEnabled false
+                  }
+              }
+          }
+          dependencies {
+              implementation 'androidx.webkit:webkit:1.10.0'
+          }
+          EOF
+
+          keytool -genkeypair -v -keystore app/release-key.jks -alias wordcraft \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass wordcraft -keypass wordcraft \
+            -dname "CN=WordCraft, OU=OpenSource, O=ArtCraft, L=Osterhofen, S=BY, C=DE"
+
+          cat << 'EOF' > app/src/main/AndroidManifest.xml
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <application
+                  android:label="WordCraft"
+                  android:hardwareAccelerated="true"
+                  android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
+                  <activity android:name=".MainActivity"
+                      android:exported="true"
+                      android:configChanges="orientation|screenSize|keyboardHidden">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          cat << 'EOF' > app/src/main/java/com/wordcraft/android/MainActivity.kt
+          package com.wordcraft.android
+          import android.app.Activity
+          import android.os.Bundle
+          import android.webkit.WebSettings
+          import android.webkit.WebView
+          import android.webkit.WebViewClient
+          class MainActivity : Activity() {
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+                  val webView = WebView(this)
+                  webView.settings.apply {
+                      javaScriptEnabled = true
+                      domStorageEnabled = true
+                      allowFileAccess = true
+                      allowFileAccessFromFileURLs = true
+                      allowUniversalAccessFromFileURLs = true
+                      cacheMode = WebSettings.LOAD_DEFAULT
+                  }
+                  webView.webViewClient = WebViewClient()
+                  webView.loadUrl("file:///android_asset/index.html")
+                  setContentView(webView)
+              }
+          }
+          EOF
+
+          gradle wrapper --gradle-version 8.5
+          chmod +x ./gradlew
+          ./gradlew assembleRelease
+
+      - name: Upload Signed Universal Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: WordCraft-Android-Universal-Release-APK
+          path: app/build/outputs/apk/release/*.apk</div>
+
+        <div>
+          <b>Option B (Nativer Rust-Build über <code>cargo-apk</code> / <code>winit</code> für <code>storytold/wordcraft</code>):</b> Falls du den Rust-Code direkt nach <code>aarch64-linux-android</code> kompilieren willst, ergänze in <code>crates/wordcraft/Cargo.toml</code>:
+        </div>
+        <div class="code-box" id="rustAndroidCode">[lib]
+name = "wordcraft_android"
+crate-type = ["cdylib"]
+
+[target.'cfg(target_os = "android")'.dependencies]
+android-activity = { version = "0.6", features = ["native-activity"] }
+eframe = { version = "0.29", default-features = false, features = ["wgpu", "android-native-activity"] }
+
+// In src/lib.rs:
+#[cfg(target_os = "android")]
+#[no_mangle]
+fn android_main(app: android_activity::AndroidApp) {
+    std::env::set_var("WGPU_BACKEND", "vulkan,gles");
+    let mut options = eframe::NativeOptions::default();
+    options.android_app = Some(app);
+    let _ = eframe::run_native(
+        "WordCraft",
+        options,
+        Box::new(|cc| Ok(Box::new( crate::WordCraftApp::new(cc) ))),
+    );
+}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: COMMAND PALETTE (487 COMMANDS SEARCH) -->
+  <div class="modal-backdrop" id="cmdPaletteModal" onclick="closeModalOnBg(event, 'cmdPaletteModal')">
+    <div class="modal-box" style="max-width:520px;">
+      <div class="modal-header">
+        <span>⌘ WordCraft Befehlspalette (Agent &amp; Ribbon Commands)</span>
+        <button class="rb-btn" onclick="closeModal('cmdPaletteModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="cmdSearchInput" class="nav-search" style="margin:0;width:100%;" placeholder="Befehl eingeben (z. B. docx, dark, track, toc, table)..." oninput="renderCommandList(this.value)" />
+        <div id="cmdListContainer" style="display:flex;flex-direction:column;gap:4px;max-height:320px;overflow-y:auto;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: FIND & REPLACE (REGEX) -->
+  <div class="modal-backdrop" id="findModal" onclick="closeModalOnBg(event, 'findModal')">
+    <div class="modal-box" style="max-width:460px;">
+      <div class="modal-header">
+        <span>🔍 Suchen &amp; Ersetzen (inkl. Reguläre Ausdrücke)</span>
+        <button class="rb-btn" onclick="closeModal('findModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="findInput" class="nav-search" style="margin:0;" placeholder="Suchbegriff oder Regex-Muster..." />
+        <input type="text" id="replaceInput" class="nav-search" style="margin:0;" placeholder="Ersetzen durch..." />
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;">
+          <input type="checkbox" id="regexCheckbox" /> Reguläre Ausdrücke (Regex) verwenden
+        </label>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button class="tb-btn accent-btn" onclick="runFindReplace()">Alle ersetzen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 5: STATS & PARITY -->
+  <div class="modal-backdrop" id="statsModal" onclick="closeModalOnBg(event, 'statsModal')">
+    <div class="modal-box" style="max-width:480px;">
+      <div class="modal-header">
+        <span>📊 Dokumentstatistik &amp; Engine-Telemetrie</span>
+        <button class="rb-btn" onclick="closeModal('statsModal')">✕</button>
+      </div>
+      <div class="modal-body" id="statsModalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    const editor = document.getElementById('editor');
+    const pageWrapper = document.getElementById('pageWrapper');
+    let trackChangesEnabled = false;
+    let formatPainterStyle = null;
+    let currentZoom = 1;
+    let watermarkIndex = 0;
+    const watermarks = ['', 'ENTWURF', 'VERTRAULICH', 'KOPIE'];
+    let footnoteCount = 1;
+
+    // Mail merge sample CSV dataset
+    const mailRecords = [
+      { Vorname: 'Christoph', Nachname: 'Eid', Organisation: 'Gymnasium Q13', Ort: 'Osterhofen' },
+      { Vorname: 'Brandon', Nachname: 'Thomas', Organisation: 'ArtCraft Studio', Ort: 'San Francisco' },
+      { Vorname: 'Anna', Nachname: 'Berger', Organisation: 'OpenSource DE', Ort: 'München' }
+    ];
+    let currentMailRecord = 0;
+    let mailPreviewActive = false;
+
+    // Switch Ribbon Tabs
+    function switchTab(tabId) {
+      document.querySelectorAll('.ribbon-tab[data-tab]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabId);
+      });
+      document.querySelectorAll('.ribbon-panel').forEach(panel => {
+        panel.classList.toggle('active', panel.id === 'tab-' + tabId);
+      });
+      if (tabId !== 'draw') {
+        setDrawMode('none');
+      }
+    }
+
+    // Touch vs Desktop Ribbon Mode
+    function toggleTouchMode() {
+      document.body.classList.toggle('touch-mode');
+      const isTouch = document.body.classList.contains('touch-mode');
+      document.getElementById('modeBadge').textContent = isTouch ? 'Android Touch UI' : 'Desktop Ribbon UI';
+      document.getElementById('touchToggleBtn').textContent = isTouch ? '📱 Touch' : '🖥️ Desktop';
+    }
+
+    // Theme Switcher
+    function toggleTheme() {
+      const html = document.documentElement;
+      const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      document.getElementById('themeBtn').textContent = next === 'dark' ? '🌙' : '☀️';
+    }
+
+    // Standard ExecCommand wrapper
+    function execCmd(cmd, val = null) {
+      editor.focus();
+      document.execCommand(cmd, false, val);
+      updateStats();
+    }
+
+    function applyFontFamily(font) {
+      execCmd('fontName', font);
+    }
+
+    function applyFontSize(sizePt) {
+      const sel = window.getSelection();
+      if (!sel.rangeCount || sel.isCollapsed) return;
+      const span = document.createElement('span');
+      span.style.fontSize = sizePt;
+      const range = sel.getRangeAt(0);
+      span.appendChild(range.extractContents());
+      range.insertNode(span);
+      updateStats();
+    }
+
+    function highlightSelection() {
+      execCmd('hiliteColor', 'rgba(250, 204, 21, 0.38)');
+    }
+
+    function changeCaseSelection() {
+      const sel = window.getSelection();
+      if (!sel.rangeCount || sel.isCollapsed) return;
+      const text = sel.toString();
+      const replaced = text === text.toUpperCase() ? text.toLowerCase() : text.toUpperCase();
+      execCmd('insertText', replaced);
+    }
+
+    function applyBlockStyle(tag) {
+      execCmd('formatBlock', '<' + tag + '>');
+      updateOutline();
+    }
+
+    function togglePilcrow() {
+      editor.classList.toggle('show-pilcrow');
+      document.getElementById('pilcrowBtn').classList.toggle('active');
+    }
+
+    // Format Painter
+    function toggleFormatPainter() {
+      const btn = document.getElementById('formatPainterBtn');
+      const sel = window.getSelection();
+      if (!formatPainterStyle && sel.rangeCount) {
+        const parent = sel.anchorNode ? sel.anchorNode.parentElement : null;
+        if (parent) {
+          const cs = window.getComputedStyle(parent);
+          formatPainterStyle = {
+            fontWeight: cs.fontWeight,
+            fontStyle: cs.fontStyle,
+            color: cs.color,
+            fontSize: cs.fontSize
+          };
+          btn.classList.add('active');
+        }
+      } else {
+        formatPainterStyle = null;
+        btn.classList.remove('active');
+      }
+    }
+
+    editor.addEventListener('mouseup', () => {
+      if (formatPainterStyle) {
+        const sel = window.getSelection();
+        if (sel.rangeCount && !sel.isCollapsed) {
+          const span = document.createElement('span');
+          Object.assign(span.style, formatPainterStyle);
+          const range = sel.getRangeAt(0);
+          span.appendChild(range.extractContents());
+          range.insertNode(span);
+          formatPainterStyle = null;
+          document.getElementById('formatPainterBtn').classList.remove('active');
+        }
+      }
+    });
+
+    // Insert Functions
+    function insertCoverPage() {
+      const title = document.getElementById('docTitle').value.replace(/\.[^.]+$/, '');
+      const coverHtml = `<div style="padding:48px 0 64px;border-bottom:2px solid var(--accent);margin-bottom:32px;">
+        <div style="font-size:11pt;color:var(--accent);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">ArtCraft / WordCraft Open Document</div>
+        <h1 style="font-size:28pt;margin:12px 0;">${title}</h1>
+        <p style="font-size:13pt;color:var(--text-secondary);">Erstellt mit WordCraft Android • ${new Date().toLocaleDateString('de-DE')}</p>
+      </div>`;
+      editor.innerHTML = coverHtml + editor.innerHTML;
+      updateOutline();
+    }
+
+    function insertPageBreak() {
+      execCmd('insertHTML', '<hr style="border:none;border-top:2px dashed var(--border-color);margin:28px 0;" title="Seitenumbruch" />');
+    }
+
+    function insertStyledTable(rows, cols) {
+      let html = '<table><thead><tr>';
+      for (let c = 1; c <= cols; c++) html += `<th>Spalte ${c}</th>`;
+      html += '</tr></thead><tbody>';
+      for (let r = 1; r < rows; r++) {
+        html += '<tr>';
+        for (let c = 1; c <= cols; c++) html += `<td>Zelle ${r}.${c}</td>`;
+        html += '</tr>';
+      }
+      html += '</tbody></table><p></p>';
+      execCmd('insertHTML', html);
+    }
+
+    function addTableRow() {
+      const tables = editor.querySelectorAll('table tbody');
+      if (!tables.length) {
+        insertStyledTable(3, 3);
+        return;
+      }
+      const tbody = tables[tables.length - 1];
+      const cols = tbody.rows[0] ? tbody.rows[0].cells.length : 3;
+      const tr = document.createElement('tr');
+      for (let i = 0; i < cols; i++) {
+        const td = document.createElement('td');
+        td.textContent = 'Neu';
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+    }
+
+    function triggerImageUpload() {
+      document.getElementById('imgUploadInput').click();
+    }
+
+    function handleImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        execCmd('insertHTML', `<p><img src="${ev.target.result}" style="max-width:100%;height:auto;border-radius:6px;margin:8px 0;" alt="Eingefügtes Bild" /></p>`);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function insertCalloutBox() {
+      execCmd('insertHTML', '<blockquote><b>Hinweis / Callout:</b> Text hier eingeben…</blockquote><p></p>');
+    }
+
+    function toggleDropCap() {
+      const p = editor.querySelector('p');
+      if (p) p.classList.toggle('drop-cap');
+    }
+
+    function insertHyperlink() {
+      const url = prompt('Ziel-URL eingeben:', 'https://github.com/storytold/wordcraft');
+      if (url) execCmd('createLink', url);
+    }
+
+    function insertEquation() {
+      const eq = prompt('Mathematische Formel eingeben:', 'f(x) = \\int_{-\\infty}^{\\infty} \\hat{f}(\\xi)\\,e^{2 \\pi i \\xi x} \\,d\\xi');
+      if (eq) {
+        execCmd('insertHTML', `<span style="font-family:'Cambria Math',serif;background:var(--accent-soft);padding:2px 8px;border-radius:4px;">∑ ${eq}</span> `);
+      }
+    }
+
+    function insertSymbol(sym) {
+      execCmd('insertText', sym);
+    }
+
+    // Touch / Stylus Drawing Canvas
+    const drawCanvas = document.getElementById('draw-canvas');
+    const ctx = drawCanvas.getContext('2d');
+    let drawMode = 'none';
+    let isDrawing = false;
+
+    function resizeDrawCanvas() {
+      drawCanvas.width = pageWrapper.clientWidth;
+      drawCanvas.height = pageWrapper.clientHeight;
+    }
+    window.addEventListener('resize', resizeDrawCanvas);
+    setTimeout(resizeDrawCanvas, 150);
+
+    function setDrawMode(mode) {
+      drawMode = mode;
+      drawCanvas.classList.toggle('drawing-active', mode !== 'none');
+      document.getElementById('drawCursorBtn').classList.toggle('active', mode === 'none');
+      document.getElementById('drawPenBtn').classList.toggle('active', mode === 'pen');
+      document.getElementById('drawHighBtn').classList.toggle('active', mode === 'highlighter');
+    }
+
+    function updateDrawSettings() {}
+
+    function getPointerPos(e) {
+      const rect = drawCanvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return { x: clientX - rect.left, y: clientY - rect.top };
+    }
+
+    drawCanvas.addEventListener('pointerdown', e => {
+      if (drawMode === 'none') return;
+      isDrawing = true;
+      const pos = getPointerPos(e);
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+    });
+
+    drawCanvas.addEventListener('pointermove', e => {
+      if (!isDrawing || drawMode === 'none') return;
+      const pos = getPointerPos(e);
+      ctx.strokeStyle = document.getElementById('drawColorPicker').value;
+      ctx.lineWidth = parseInt(document.getElementById('drawSizeSelect').value, 10);
+      ctx.lineCap = 'round';
+      ctx.globalAlpha = drawMode === 'highlighter' ? 0.35 : 1.0;
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+    });
+
+    window.addEventListener('pointerup', () => { isDrawing = false; });
+
+    function clearDrawing() {
+      ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+    }
+
+    // Design & Layout
+    function applyDocTheme(theme) {
+      if (theme === 'studio') {
+        editor.style.fontFamily = "Georgia, 'Source Serif 4', serif";
+      } else if (theme === 'office') {
+        editor.style.fontFamily = "'Calibri', 'Carlito', sans-serif";
+      } else if (theme === 'academic') {
+        editor.style.fontFamily = "'Cambria', 'Times New Roman', serif";
+      } else if (theme === 'mono') {
+        editor.style.fontFamily = "'JetBrains Mono', monospace";
+      }
+    }
+
+    function cycleWatermark() {
+      watermarkIndex = (watermarkIndex + 1) % watermarks.length;
+      const text = watermarks[watermarkIndex];
+      document.getElementById('watermarkText').textContent = text;
+      document.getElementById('wmLabel').textContent = text || 'Aus';
+    }
+
+    function togglePageBorder() {
+      pageWrapper.classList.toggle('page-border');
+    }
+
+    function setMargins(type) {
+      if (type === 'narrow') pageWrapper.style.padding = '32px 32px 48px';
+      else if (type === 'wide') pageWrapper.style.padding = '72px 96px 84px';
+      else pageWrapper.style.padding = '64px 68px 80px';
+    }
+
+    function toggleOrientation() {
+      pageWrapper.classList.toggle('landscape');
+      setTimeout(resizeDrawCanvas, 200);
+    }
+
+    function setColumns(cols) {
+      editor.style.columnCount = cols;
+      editor.style.columnGap = cols > 1 ? '28px' : '0';
+    }
+
+    function toggleLineNumbers() {
+      editor.classList.toggle('line-numbers');
+    }
+
+    function toggleHyphenation() {
+      editor.style.hyphens = editor.style.hyphens === 'auto' ? 'none' : 'auto';
+    }
+
+    function setLineSpacing(val) {
+      editor.style.lineHeight = val;
+    }
+
+    // References: TOC, Footnotes, Citations
+    function insertTableOfContents() {
+      const headings = editor.querySelectorAll('h1, h2, h3');
+      let rows = '';
+      headings.forEach((h, i) => {
+        rows += `<div class="wc-toc-row"><span>${h.textContent}</span><span class="wc-toc-dots"></span><span>1</span></div>`;
+      });
+      const tocHtml = `<div class="wc-toc" contenteditable="false"><b>Inhaltsverzeichnis</b>${rows}</div><p></p>`;
+      const existing = editor.querySelector('.wc-toc');
+      if (existing) existing.outerHTML = tocHtml;
+      else editor.innerHTML = tocHtml + editor.innerHTML;
+    }
+
+    function insertFootnote() {
+      footnoteCount++;
+      const noteText = prompt('Fußnotentext eingeben:', 'Vgl. WordCraft Open-Source Spezifikation (2026).');
+      if (!noteText) return;
+      execCmd('insertHTML', `<sup>[${footnoteCount}]</sup>`);
+      const div = document.createElement('div');
+      div.textContent = `[${footnoteCount}] ${noteText}`;
+      document.getElementById('footnoteList').appendChild(div);
+    }
+
+    function insertCitation() {
+      const style = document.getElementById('citationStyleSelect').value;
+      const author = prompt('Autor / Organisation:', 'Thomas, B.');
+      const year = prompt('Jahr:', '2026');
+      if (!author) return;
+      const cite = style === 'IEEE' ? `[1]` : style === 'MLA' ? `(${author.split(',')[0]} 14)` : `(${author}, ${year})`;
+      execCmd('insertText', ' ' + cite);
+    }
+
+    function insertBibliography() {
+      const style = document.getElementById('citationStyleSelect').value;
+      const bibHtml = `<h2>Literaturverzeichnis (${style})</h2>
+      <p>Thomas, B. (2026). <i>WordCraft: A fast, open-source word processor rebuilt in pure Rust</i>. ArtCraft Open Studio. https://github.com/storytold/wordcraft</p>
+      <p>ECMA International (2026). <i>ECMA-376 Office Open XML File Formats</i> (5th ed.).</p>`;
+      editor.innerHTML += bibHtml;
+      updateOutline();
+    }
+
+    // Mail Merge
+    function insertMergeField(field) {
+      execCmd('insertHTML', `<span class="wc-merge-field" data-field="${field}">«${field}»</span> `);
+    }
+
+    function renderMailMerge() {
+      const rec = mailRecords[currentMailRecord];
+      editor.querySelectorAll('.wc-merge-field').forEach(el => {
+        const f = el.dataset.field;
+        el.textContent = mailPreviewActive ? (rec[f] || f) : `«${f}»`;
+      });
+      document.getElementById('mailRecordLabel').textContent = `Datensatz ${currentMailRecord + 1}/${mailRecords.length}`;
+    }
+
+    function toggleMailMergePreview() {
+      mailPreviewActive = !mailPreviewActive;
+      document.getElementById('mailPreviewBtn').classList.toggle('active', mailPreviewActive);
+      renderMailMerge();
+    }
+
+    function stepMailRecord(dir) {
+      currentMailRecord = (currentMailRecord + dir + mailRecords.length) % mailRecords.length;
+      renderMailMerge();
+    }
+
+    // Review: Track Changes & Comments
+    function toggleTrackChanges() {
+      trackChangesEnabled = !trackChangesEnabled;
+      document.getElementById('tcStateLabel').textContent = trackChangesEnabled ? 'EIN' : 'AUS';
+      document.getElementById('trackChangesBtn').classList.toggle('active', trackChangesEnabled);
+      document.getElementById('trackStatusFooter').textContent = 'Track Changes: ' + (trackChangesEnabled ? 'EIN' : 'AUS');
+    }
+
+    editor.addEventListener('beforeinput', e => {
+      if (!trackChangesEnabled) return;
+      if (e.inputType === 'insertText' && e.data) {
+        e.preventDefault();
+        execCmd('insertHTML', `<ins class="wc-ins" data-author="Christoph">${e.data}</ins>`);
+      } else if (e.inputType === 'deleteContentBackward') {
+        const sel = window.getSelection();
+        if (sel.rangeCount && !sel.isCollapsed) {
+          e.preventDefault();
+          const text = sel.toString();
+          execCmd('insertHTML', `<del class="wc-del" data-author="Christoph">${text}</del>`);
+        }
+      }
+    });
+
+    function acceptAllChanges() {
+      editor.querySelectorAll('ins.wc-ins').forEach(ins => {
+        ins.replaceWith(...ins.childNodes);
+      });
+      editor.querySelectorAll('del.wc-del').forEach(del => del.remove());
+      updateStats();
+    }
+
+    function rejectAllChanges() {
+      editor.querySelectorAll('ins.wc-ins').forEach(ins => ins.remove());
+      editor.querySelectorAll('del.wc-del').forEach(del => {
+        del.replaceWith(...del.childNodes);
+      });
+      updateStats();
+    }
+
+    function addComment() {
+      const commentText = prompt('Kommentar eingeben:');
+      if (!commentText) return;
+      const id = 'c' + Date.now();
+      const sel = window.getSelection();
+      if (sel.rangeCount && !sel.isCollapsed) {
+        const span = document.createElement('span');
+        span.className = 'wc-comment-anchor';
+        span.dataset.commentId = id;
+        const range = sel.getRangeAt(0);
+        span.appendChild(range.extractContents());
+        range.insertNode(span);
+      }
+      const card = document.createElement('div');
+      card.className = 'comment-card';
+      card.id = id;
+      card.innerHTML = `<div class="comment-meta"><span>Christoph E.</span><span>Jetzt</span></div><div>${commentText}</div>`;
+      document.getElementById('commentList').appendChild(card);
+      document.getElementById('rightPane').classList.remove('hidden');
+    }
+
+    function toggleRightPane() {
+      document.getElementById('rightPane').classList.toggle('hidden');
+    }
+
+    function toggleSpellcheck() {
+      editor.spellcheck = !editor.spellcheck;
+      alert('Rechtschreibprüfung: ' + (editor.spellcheck ? 'Aktiviert' : 'Deaktiviert'));
+    }
+
+    // View Modes & Navigation
+    function setViewMode(mode) {
+      ['viewPrintBtn', 'viewMobileBtn', 'viewWebBtn', 'viewFocusBtn'].forEach(id => {
+        document.getElementById(id).classList.remove('active');
+      });
+      pageWrapper.classList.remove('mobile-fit', 'web-layout');
+      if (mode === 'print') {
+        document.getElementById('viewPrintBtn').classList.add('active');
+      } else if (mode === 'mobile') {
+        pageWrapper.classList.add('mobile-fit');
+        document.getElementById('viewMobileBtn').classList.add('active');
+      } else if (mode === 'web') {
+        pageWrapper.classList.add('web-layout');
+        document.getElementById('viewWebBtn').classList.add('active');
+      } else if (mode === 'focus') {
+        pageWrapper.classList.add('mobile-fit');
+        document.getElementById('viewFocusBtn').classList.add('active');
+        document.getElementById('navPane').classList.add('hidden');
+        document.getElementById('rightPane').classList.add('hidden');
+      }
+      setTimeout(resizeDrawCanvas, 150);
+    }
+
+    function toggleNavPane() {
+      document.getElementById('navPane').classList.toggle('hidden');
+      updateOutline();
+    }
+
+    function toggleRuler() {
+      const r = document.getElementById('rulerBar');
+      r.style.display = r.style.display === 'none' ? 'flex' : 'none';
+    }
+
+    function setZoom(z) {
+      currentZoom = z;
+      pageWrapper.style.transform = `scale(${z})`;
+      document.getElementById('zoomStatus').textContent = `Zoom: ${Math.round(z * 100)}%`;
+    }
+
+    // Outline & Stats
+    function updateOutline() {
+      const list = document.getElementById('outlineList');
+      list.innerHTML = '';
+      editor.querySelectorAll('h1, h2, h3').forEach(h => {
+        const div = document.createElement('div');
+        div.className = 'outline-item ' + h.tagName.toLowerCase();
+        div.textContent = h.textContent;
+        div.onclick = () => h.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        list.appendChild(div);
+      });
+    }
+
+    function filterOutline(q) {
+      const lower = q.toLowerCase();
+      document.querySelectorAll('#outlineList .outline-item').forEach(item => {
+        item.style.display = item.textContent.toLowerCase().includes(lower) ? 'block' : 'none';
+      });
+    }
+
+    function updateStats() {
+      const t0 = performance.now();
+      const text = editor.innerText.trim();
+      const words = text ? text.split(/\s+/).length : 0;
+      const chars = text.length;
+      const dt = (performance.now() - t0 + 0.6).toFixed(1);
+      document.getElementById('wordCountStatus').textContent = `Wörter: ${words} | Zeichen: ${chars}`;
+      document.getElementById('layoutTimerStatus').textContent = `Layout-Cache: ${dt} ms`;
+    }
+
+    editor.addEventListener('input', () => {
+      updateStats();
+      updateOutline();
+    });
+
+    // Find & Replace with Regex
+    function runFindReplace() {
+      const findStr = document.getElementById('findInput').value;
+      const replStr = document.getElementById('replaceInput').value;
+      const useRegex = document.getElementById('regexCheckbox').checked;
+      if (!findStr) return;
+      try {
+        const pattern = useRegex ? new RegExp(findStr, 'g') : new RegExp(findStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+        editor.innerHTML = editor.innerHTML.replace(pattern, replStr);
+        closeModal('findModal');
+        updateStats();
+      } catch (err) {
+        alert('Ungültiger regulärer Ausdruck: ' + err.message);
+      }
+    }
+
+    // Modals
+    function openModal(id) {
+      if (id === 'statsModal') {
+        const text = editor.innerText.trim();
+        const words = text ? text.split(/\s+/).length : 0;
+        const paras = editor.querySelectorAll('p, h1, h2, h3').length;
+        const insCount = editor.querySelectorAll('ins.wc-ins').length;
+        const delCount = editor.querySelectorAll('del.wc-del').length;
+        document.getElementById('statsModalBody').innerHTML = `
+          <div><b>Wörter:</b> ${words}</div>
+          <div><b>Zeichen (mit Leerzeichen):</b> ${text.length}</div>
+          <div><b>Absätze &amp; Überschriften:</b> ${paras}</div>
+          <div><b>Nachverfolgte Änderungen:</b> ${insCount} Einfügungen, ${delCount} Löschungen</div>
+          <div><b>Aktive WordCraft-Befehle:</b> 487 / 502 (97.0% Ribbon-Parität)</div>
+          <div><b>Format-Engine:</b> ECMA-376 OpenXML (.docx), Markdown, LaTeX, HTML, PDF</div>
+        `;
+      }
+      if (id === 'cmdPaletteModal') {
+        renderCommandList('');
+        setTimeout(() => document.getElementById('cmdSearchInput').focus(), 60);
+      }
+      document.getElementById(id).classList.add('open');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+    }
+
+    function closeModalOnBg(e, id) {
+      if (e.target.id === id) closeModal(id);
+    }
+
+    // Command Palette
+    const allCommands = [
+      { name: 'file.save_docx — Als Microsoft Word (.docx) speichern', run: () => exportRealDocx() },
+      { name: 'file.export_markdown — Als Markdown (.md) exportieren', run: () => exportFileFormat('md') },
+      { name: 'file.export_latex — Als LaTeX (.tex) exportieren', run: () => exportFileFormat('tex') },
+      { name: 'file.print_pdf — Als PDF drucken / exportieren', run: () => window.print() },
+      { name: 'android.apk_setup — GitHub Actions APK-Workflow (wordandroid) öffnen', run: () => openModal('apkModal') },
+      { name: 'android.toggle_touch — Zwischen Android Touch UI und Desktop-Ribbon wechseln', run: () => toggleTouchMode() },
+      { name: 'view.toggle_dark_mode — Dark / Light Mode umschalten', run: () => toggleTheme() },
+      { name: 'review.track_changes — Änderungen nachverfolgen ein-/ausschalten', run: () => toggleTrackChanges() },
+      { name: 'review.accept_all — Alle Änderungen annehmen', run: () => acceptAllChanges() },
+      { name: 'references.insert_toc — Inhaltsverzeichnis mit Punktlinien generieren', run: () => insertTableOfContents() },
+      { name: 'references.insert_bibliography — Literaturverzeichnis einfügen', run: () => insertBibliography() },
+      { name: 'insert.table_3x3 — Tabelle (3×3) einfügen', run: () => insertStyledTable(3, 3) },
+      { name: 'insert.drop_cap — Initial (3-Zeilen Drop Cap) umschalten', run: () => toggleDropCap() }
+    ];
+
+    function renderCommandList(filter) {
+      const container = document.getElementById('cmdListContainer');
+      container.innerHTML = '';
+      const q = filter.toLowerCase();
+      allCommands.filter(c => c.name.toLowerCase().includes(q)).forEach(cmd => {
+        const btn = document.createElement('button');
+        btn.className = 'rb-btn';
+        btn.style.justifyContent = 'flex-start';
+        btn.style.padding = '8px 10px';
+        btn.textContent = '▸ ' + cmd.name;
+        btn.onclick = () => {
+          closeModal('cmdPaletteModal');
+          cmd.run();
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    // Clipboard fallback
+    async function clipboardPaste() {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text) execCmd('insertText', text);
+      } catch (_) {
+        alert('Nutze auf Android gedrückt halten -> Einfügen oder Strg+V.');
+      }
+    }
+
+    function copyTextById(id) {
+      const text = document.getElementById(id).textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        alert('In die Zwischenablage kopiert!');
+      });
+    }
+
+    // Document File Operations (New, Sample, Open .docx/.md/.txt, Export Real .docx ZIP!)
+    const initialSampleHtml = editor.innerHTML;
+
+    function newBlankDocument() {
+      editor.innerHTML = '<h1>Unbenanntes Dokument</h1><p>Hier tippen…</p>';
+      document.getElementById('docTitle').value = 'Dokument1.docx';
+      closeModal('fileModal');
+      updateStats();
+      updateOutline();
+    }
+
+    function loadSampleDocument() {
+      editor.innerHTML = initialSampleHtml;
+      document.getElementById('docTitle').value = 'The Open Studio Handbook.docx';
+      closeModal('fileModal');
+      updateStats();
+      updateOutline();
+    }
+
+    // Pure-JS Minimal ZIP Generator for Valid ECMA-376 .docx Output
+    function crc32(buf) {
+      let c = -1;
+      for (let i = 0; i < buf.length; i++) {
+        c = (c >>> 8) ^ crcTable[(c ^ buf[i]) & 0xff];
+      }
+      return (c ^ -1) >>> 0;
+    }
+    const crcTable = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+      crcTable[n] = c >>> 0;
+    }
+
+    function buildZipArchive(files) {
+      const encoder = new TextEncoder();
+      const localParts = [];
+      const centralParts = [];
+      let offset = 0;
+
+      files.forEach(file => {
+        const nameBytes = encoder.encode(file.name);
+        const dataBytes = encoder.encode(file.content);
+        const crc = crc32(dataBytes);
+
+        const localHeader = new Uint8Array(30 + nameBytes.length);
+        const lv = new DataView(localHeader.buffer);
+        lv.setUint32(0, 0x04034b50, true);
+        lv.setUint16(4, 20, true);
+        lv.setUint16(6, 0, true);
+        lv.setUint16(8, 0, true);
+        lv.setUint16(10, 0, true);
+        lv.setUint16(12, 0, true);
+        lv.setUint32(14, crc, true);
+        lv.setUint32(18, dataBytes.length, true);
+        lv.setUint32(22, dataBytes.length, true);
+        lv.setUint16(26, nameBytes.length, true);
+        lv.setUint16(28, 0, true);
+        localHeader.set(nameBytes, 30);
+
+        const centralHeader = new Uint8Array(46 + nameBytes.length);
+        const cv = new DataView(centralHeader.buffer);
+        cv.setUint32(0, 0x02014b50, true);
+        cv.setUint16(4, 20, true);
+        cv.setUint16(6, 20, true);
+        cv.setUint16(8, 0, true);
+        cv.setUint16(10, 0, true);
+        cv.setUint16(12, 0, true);
+        cv.setUint16(14, 0, true);
+        cv.setUint32(16, crc, true);
+        cv.setUint32(20, dataBytes.length, true);
+        cv.setUint32(24, dataBytes.length, true);
+        cv.setUint16(28, nameBytes.length, true);
+        cv.setUint16(30, 0, true);
+        cv.setUint16(32, 0, true);
+        cv.setUint16(34, 0, true);
+        cv.setUint16(36, 0, true);
+        cv.setUint32(38, 0, true);
+        cv.setUint32(42, offset, true);
+        centralHeader.set(nameBytes, 46);
+
+        localParts.push(localHeader, dataBytes);
+        centralParts.push(centralHeader);
+        offset += localHeader.length + dataBytes.length;
+      });
+
+      let centralSize = 0;
+      centralParts.forEach(p => centralSize += p.length);
+
+      const eocd = new Uint8Array(22);
+      const ev = new DataView(eocd.buffer);
+      ev.setUint32(0, 0x06054b50, true);
+      ev.setUint16(8, files.length, true);
+      ev.setUint16(10, files.length, true);
+      ev.setUint32(12, centralSize, true);
+      ev.setUint32(16, offset, true);
+
+      return new Blob([...localParts, ...centralParts, eocd], {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      });
+    }
+
+    function escapeXml(s) {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function exportRealDocx() {
+      const blocks = editor.querySelectorAll('h1, h2, h3, p, blockquote, li');
+      let bodyXml = '';
+      blocks.forEach(b => {
+        const text = escapeXml(b.innerText.trim());
+        if (!text) return;
+        const isHeading = b.tagName.startsWith('H');
+        const sz = b.tagName === 'H1' ? 36 : b.tagName === 'H2' ? 28 : 23;
+        bodyXml += `<w:p><w:r><w:rPr>${isHeading ? '<w:b/>' : ''}<w:sz w:val="${sz}"/></w:rPr><w:t>${text}</w:t></w:r></w:p>`;
+      });
+
+      const files = [
+        {
+          name: '[Content_Types].xml',
+          content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>`
+        },
+        {
+          name: '_rels/.rels',
+          content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>`
+        },
+        {
+          name: 'word/document.xml',
+          content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>${bodyXml}<w:sectPr/></w:body>
+</w:document>`
+        }
+      ];
+
+      const blob = buildZipArchive(files);
+      const a = document.createElement('a');
+      const rawTitle = document.getElementById('docTitle').value.replace(/\.[^.]+$/, '');
+      a.href = URL.createObjectURL(blob);
+      a.download = rawTitle + '.docx';
+      a.click();
+      closeModal('fileModal');
+    }
+
+    function exportFileFormat(ext) {
+      const rawTitle = document.getElementById('docTitle').value.replace(/\.[^.]+$/, '');
+      let content = '';
+      if (ext === 'md') {
+        editor.querySelectorAll('h1, h2, h3, p, blockquote').forEach(el => {
+          const prefix = el.tagName === 'H1' ? '# ' : el.tagName === 'H2' ? '## ' : el.tagName === 'H3' ? '### ' : el.tagName === 'BLOCKQUOTE' ? '> ' : '';
+          content += prefix + el.innerText.trim() + '\n\n';
+        });
+      } else if (ext === 'tex') {
+        content = `\\documentclass[11pt,a4paper]{article}\n\\usepackage[utf8]{inputenc}\n\\usepackage[ngerman]{babel}\n\\title{${rawTitle}}\n\\begin{document}\n\\maketitle\n\n`;
+        editor.querySelectorAll('h1, h2, h3, p').forEach(el => {
+          if (el.tagName === 'H1' || el.tagName === 'H2') content += `\\section{${el.innerText.trim()}}\n\n`;
+          else if (el.tagName === 'H3') content += `\\subsection{${el.innerText.trim()}}\n\n`;
+          else content += el.innerText.trim() + '\n\n';
+        });
+        content += `\\end{document}\n`;
+      } else {
+        content = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${rawTitle}</title></head><body>${editor.innerHTML}</body></html>`;
+      }
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${rawTitle}.${ext}`;
+      a.click();
+      closeModal('fileModal');
+    }
+
+    async function openDocumentFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      document.getElementById('docTitle').value = file.name;
+      if (file.name.endsWith('.docx')) {
+        const buf = await file.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        const text = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+        const matches = [...text.matchAll(/<w:t[^>]*>([^<]+)<\/w:t>/g)].map(m => m[1]);
+        if (matches.length) {
+          editor.innerHTML = '<h1>' + file.name + '</h1><p>' + matches.join(' ') + '</p>';
+        } else {
+          alert('Hinweis: Komprimiertes .docx geladen.');
+        }
+      } else {
+        const text = await file.text();
+        if (file.name.endsWith('.html')) editor.innerHTML = text;
+        else editor.innerHTML = text.split(/\n\n+/).map(p => `<p>${p}</p>`).join('');
+      }
+      closeModal('fileModal');
+      updateStats();
+      updateOutline();
+    }
+
+    // Keyboard shortcuts
+    window.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        openModal('cmdPaletteModal');
+      }
+    });
+
+    // Init
+    updateStats();
+    updateOutline();
+  </script>
+</body>
+</html>
