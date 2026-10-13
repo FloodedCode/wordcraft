@@ -113,82 +113,6 @@ fn dispatch(app: &mut WordApp, key: Key, m: Modifiers) -> bool {
     false
 }
 
-fn key_to_char(key: Key, shift: bool) -> Option<char> {
-    Some(match key {
-        Key::Space => ' ',
-        Key::Enter => '\n',
-        Key::Tab => '\t',
-        Key::A => if shift { 'A' } else { 'a' },
-        Key::B => if shift { 'B' } else { 'b' },
-        Key::C => if shift { 'C' } else { 'c' },
-        Key::D => if shift { 'D' } else { 'd' },
-        Key::E => if shift { 'E' } else { 'e' },
-        Key::F => if shift { 'F' } else { 'f' },
-        Key::G => if shift { 'G' } else { 'g' },
-        Key::H => if shift { 'H' } else { 'h' },
-        Key::I => if shift { 'I' } else { 'i' },
-        Key::J => if shift { 'J' } else { 'j' },
-        Key::K => if shift { 'K' } else { 'k' },
-        Key::L => if shift { 'L' } else { 'l' },
-        Key::M => if shift { 'M' } else { 'm' },
-        Key::N => if shift { 'N' } else { 'n' },
-        Key::O => if shift { 'O' } else { 'o' },
-        Key::P => if shift { 'P' } else { 'p' },
-        Key::Q => if shift { 'Q' } else { 'q' },
-        Key::R => if shift { 'R' } else { 'r' },
-        Key::S => if shift { 'S' } else { 's' },
-        Key::T => if shift { 'T' } else { 't' },
-        Key::U => if shift { 'U' } else { 'u' },
-        Key::V => if shift { 'V' } else { 'v' },
-        Key::W => if shift { 'W' } else { 'w' },
-        Key::X => if shift { 'X' } else { 'x' },
-        Key::Y => if shift { 'Y' } else { 'y' },
-        Key::Z => if shift { 'Z' } else { 'z' },
-        Key::Num0 => if shift { ')' } else { '0' },
-        Key::Num1 => if shift { '!' } else { '1' },
-        Key::Num2 => if shift { '@' } else { '2' },
-        Key::Num3 => if shift { '#' } else { '3' },
-        Key::Num4 => if shift { '$' } else { '4' },
-        Key::Num5 => if shift { '%' } else { '5' },
-        Key::Num6 => if shift { '^' } else { '6' },
-        Key::Num7 => if shift { '&' } else { '7' },
-        Key::Num8 => if shift { '*' } else { '8' },
-        Key::Num9 => if shift { '(' } else { '9' },
-        Key::Period => if shift { '>' } else { '.' },
-        Key::Comma => if shift { '<' } else { ',' },
-        Key::Equals | Key::Plus => if shift { '+' } else { '=' },
-        Key::Minus => if shift { '_' } else { '-' },
-        Key::OpenBracket => if shift { '{' } else { '[' },
-        Key::CloseBracket => if shift { '}' } else { ']' },
-        Key::Semicolon => if shift { ':' } else { ';' },
-        Key::Quote => if shift { '"' } else { '\'' },
-        Key::Slash => if shift { '?' } else { '/' },
-        Key::Backslash => if shift { '|' } else { '\\' },
-        Key::Backtick => if shift { '~' } else { '`' },
-        _ => return None,
-    })
-}
-
-fn handle_preedit_and_commit(app: &mut WordApp, new_text: &str, is_commit: bool) {
-    let old_len = app.canvas.ime_preedit.chars().count();
-    if old_len > 0 {
-        for _ in 0..old_len {
-            let _ = app.run("text.backspace", json!({}));
-        }
-    }
-    if is_commit {
-        app.canvas.ime_preedit.clear();
-        if !new_text.is_empty() {
-            insert_typed_lines(app, new_text);
-        }
-    } else {
-        app.canvas.ime_preedit = new_text.to_string();
-        if !new_text.is_empty() {
-            let _ = app.run("text.insert", json!({"text": new_text}));
-        }
-    }
-}
-
 /// Insert committed text the way the user typed it: line breaks split paragraphs (like
 /// Enter) instead of landing as literal control characters inside a paragraph.
 fn insert_typed_lines(app: &mut WordApp, text: &str) {
@@ -217,13 +141,14 @@ pub fn canvas_events(app: &mut WordApp, ctx: &egui::Context) {
                 if m.command || (m.ctrl && !cfg!(target_os = "macos")) {
                     continue;
                 }
-                handle_preedit_and_commit(app, &t, true);
+                insert_typed_lines(app, &t);
             }
             egui::Event::Ime(egui::ImeEvent::Preedit { text, .. }) => {
-                handle_preedit_and_commit(app, &text, false);
+                app.canvas.ime_preedit = text;
             }
             egui::Event::Ime(egui::ImeEvent::Commit(text)) => {
-                handle_preedit_and_commit(app, &text, true);
+                app.canvas.ime_preedit.clear();
+                insert_typed_lines(app, &text);
             }
             egui::Event::Paste(t) => {
                 let id = if ctx.input(|i| i.modifiers.shift && i.modifiers.alt) { "edit.pasteText" } else { "edit.paste" };
@@ -247,14 +172,7 @@ pub fn canvas_events(app: &mut WordApp, ctx: &egui::Context) {
                     let _ = app.run("insert.closeHeader", json!({}));
                     continue;
                 }
-                if !dispatch(app, key, modifiers)
-                    && !modifiers.command
-                    && !modifiers.ctrl
-                    && !modifiers.alt
-                    && let Some(ch) = key_to_char(key, modifiers.shift)
-                {
-                    let _ = app.run("text.insert", json!({"text": ch.to_string()}));
-                }
+                dispatch(app, key, modifiers);
             }
             _ => {}
         }

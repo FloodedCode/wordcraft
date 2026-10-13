@@ -228,7 +228,7 @@ impl eframe::App for AndroidWordApp {
         {
             let wants_ime = ctx.output(|o| o.ime.is_some());
             bridge::sync_keyboard(ctx, wants_ime);
-            if wants_ime || ctx.egui_wants_keyboard_input() {
+            if wants_ime || ctx.egui_wants_keyboard_input() || self.0.canvas.focused {
                 bridge::poll_ime(raw);
             }
         }
@@ -375,7 +375,9 @@ mod bridge {
     pub fn poll_ime(raw: &mut egui::RawInput) {
         let app = android_app_slot().lock().map(|g| g.clone()).unwrap_or(None);
         let Some(app) = app else { return };
-        let state = app.text_input_state();
+        let Ok(state) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| app.text_input_state())) else {
+            return;
+        };
         let buf = ImeBuffer { text: state.text, compose: state.compose_region.map(|s| (s.start, s.end)) };
         let (events, clear) = conduit_slot().lock().map(|mut c| c.poll(&buf)).unwrap_or_default();
         if !events.is_empty() {
@@ -383,7 +385,9 @@ mod bridge {
             raw.events.extend(events);
         }
         if clear {
-            app.set_text_input_state(android_activity::input::TextInputState::default());
+            let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                app.set_text_input_state(android_activity::input::TextInputState::default());
+            }));
         }
     }
 

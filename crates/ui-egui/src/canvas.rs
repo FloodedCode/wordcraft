@@ -422,7 +422,7 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
     if resp.hovered() {
         ui.ctx().set_cursor_icon(egui::CursorIcon::Text);
     }
-    if app.canvas.focused {
+    if app.canvas.focused || (cfg!(target_os = "android") && !ui.ctx().egui_wants_keyboard_input()) {
         crate::keys::canvas_events(app, ui.ctx());
     }
     let _ = origin;
